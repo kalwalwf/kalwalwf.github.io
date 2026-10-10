@@ -5,6 +5,7 @@ const vm=require('node:vm');
 const assert=require('node:assert/strict');
 const js=fs.readFileSync(process.argv[2]||'_site/app.js','utf8');
 const app={innerHTML:''};
+const kwfLocalPrefs=new Map();
 const document={
   documentElement:{lang:'en',dir:'ltr'},title:'',
   getElementById(id){return id==='app'?app:null;},
@@ -14,7 +15,7 @@ const document={
 };
 const ctx=vm.createContext({
   window:{KWF_CONFIG:{}},document,console,
-  localStorage:{getItem(){return 'en';},setItem(){}},
+  localStorage:{getItem(key){return kwfLocalPrefs.get(key)??null;},setItem(key,value){kwfLocalPrefs.set(key,String(value));}},
   location:{hash:'',search:'',origin:'https://kalwalwf.github.io',pathname:'/'},
   URLSearchParams,URL,FormData,
   setTimeout(){return 0;},setInterval(){return 0;},queueMicrotask(){},
@@ -24,22 +25,31 @@ const ctx=vm.createContext({
 });
 vm.runInContext(js,ctx,{timeout:10000,filename:'kwf-website-app.js'});
 function run(expression){return vm.runInContext(expression,ctx,{timeout:5000});}
+assert.equal(run("localStorage.getItem('kwfLanguage')"),'en','first-time visitor language defaults to English');
+assert.equal(run("state.language"),'en','initial site language is English');
+
 run("state.ready=true;state.authView='login';state.publicPage='auth';render();");
 assert.match(app.innerHTML,/kwfForgot/,'login has forgot password');
+assert.match(app.innerHTML,/Password Reset/,'login reset label is Password Reset');
+assert.doesNotMatch(app.innerHTML,/Reset with email|Reset with mobile OTP|kwfPhoneForgot/,'mobile OTP button and old reset label absent');
+assert.match(app.innerHTML,/kwf-public-home-btn/,'Public Home button has emphasized styling');
+assert.match(app.innerHTML,/Public Home/,'Public Home button label is capitalized');
 assert.match(app.innerHTML,/kwfResendVerification/,'login has resend verification');
 run("state.authView='kwfForgot';render();");
 assert.match(app.innerHTML,/kwfRequestReset/,'email reset request exists');
 run("state.authView='kwfNewPassword';render();");
 assert.match(app.innerHTML,/kwfSavePassword/,'new password form exists');
-run("state.authView='login';state.user={id:'10000000-0000-4000-8000-000000000001',email:'test@example.com'};state.profile={full_name:'Test Owner',role:'owner'};state.view='staff';state.families=[{id:'20000000-0000-4000-8000-000000000002',family_code:'F100',family_name:'Test family',category:'general',status:'active',contact_phone:'',address:'',notes:''}];state.expenses=[];state.aid=[];state.donations=[];state.profiles=[{id:state.user.id,full_name:'Test Owner',role:'owner',phone:''}];state.campaigns=[];state.kwfStaffInvites=[];state.kwfActivity=[];render();");
+run("state.authView='login';state.user={id:'10000000-0000-4000-8000-000000000001',email:'test@example.com'};state.profile={full_name:'Test Owner',role:'owner'};state.view='staff';state.families=[{id:'20000000-0000-4000-8000-000000000002',serial_no:1,family_code:'F100',family_name:'Test family',category:'general',status:'active',contact_phone:'',address:'',notes:''}];state.expenses=[];state.aid=[];state.donations=[];state.profiles=[{id:state.user.id,full_name:'Test Owner',role:'owner',phone:''}];state.campaigns=[];state.kwfStaffInvites=[];state.kwfActivity=[];render();");
 assert.match(app.innerHTML,/kwfCreateStaffV3/,'owner can create staff name, father name, CNIC, mobile, username and password');
 assert.match(run("accountView()"),/kwfChangePasswordV2/,'account page supports verified old password change');
-run("state.kwfStaffAccounts=[{user_id:'44444444-4444-4444-8444-444444444444',username:'teststaff',created_at:'2026-10-10T10:00:00Z'}];state.profiles.push({id:'44444444-4444-4444-8444-444444444444',full_name:'Staff Test',role:'staff',phone:''});render();");
+run("state.kwfStaffAccounts=[{user_id:'44444444-4444-4444-8444-444444444444',username:'teststaff',created_at:'2026-10-10T10:00:00Z'}];state.profiles.push({id:'44444444-4444-4444-8444-444444444444',full_name:'Staff Test',role:'staff',staff_serial_no:1,phone:''});render();");
 assert.match(app.innerHTML,/kwfResetStaffV2/,'owner can reset staff password');
 assert.match(app.innerHTML,/teststaff/,'staff username listed in owner dashboard');
 assert.match(app.innerHTML,/kwfMarkSeen/,'owner sees staff activity logs');
 assert.match(app.innerHTML,/kwf-alert-button/,'owner sees notification badge');
 assert.match(run("familiesView()"),/kwfEditRecord/,'owner sees edit family');
+assert.match(run("familiesView()"),/Sr. No./,'family table includes Sr. No. heading');
+assert.match(run("familiesView()"),/kwf-serial-cell">1<\/td>/,'family row displays permanent serial 1');
 assert.match(run("accountView()"),/Test Owner/,'account profile visible');
 run("state.profile={full_name:'Test Staff',role:'staff'};");
 assert.match(run("accountView()"),/kwfStaffSetPassword/,'email-invited staff can set initial password');
@@ -71,13 +81,15 @@ assert.equal(run("kwfUsernameEmail('Test_Staff')"),'test_staff@staff.kalwalwf.gi
 assert.equal(run("kwfNormalizePhone('03001234567')"),'+923001234567','Pakistani mobile number normalization');
 assert.match(run("setupView()"),/kwfRetryConnectionV3/,'slow connection gets retry button');
 assert.doesNotMatch(run("setupView()"),/not yet been connected|run the provided SQL file/i,'old misleading setup warning removed');
-run("state.kwfPhoneRecovery=false;state.authView='login';state.profile={full_name:'Test Owner',role:'owner'};state.user={id:'10000000-0000-4000-8000-000000000001',email:'test@example.com'};state.view='staff';state.kwfStaffAccounts=[{user_id:'44444444-4444-4444-8444-444444444444',username:'teststaff',is_active:true,father_name:'Test Father',cnic:'1234567890123',mobile:'+923001234567'}];state.profiles=[{id:state.user.id,full_name:'Test Owner',role:'owner'},{id:'44444444-4444-4444-8444-444444444444',full_name:'Staff Test',role:'staff'}];render();");
+run("state.kwfPhoneRecovery=false;state.authView='login';state.profile={full_name:'Test Owner',role:'owner'};state.user={id:'10000000-0000-4000-8000-000000000001',email:'test@example.com'};state.view='staff';state.kwfStaffAccounts=[{user_id:'44444444-4444-4444-8444-444444444444',username:'teststaff',is_active:true,father_name:'Test Father',cnic:'1234567890123',mobile:'+923001234567'}];state.profiles=[{id:state.user.id,full_name:'Test Owner',role:'owner'},{id:'44444444-4444-4444-8444-444444444444',full_name:'Staff Test',role:'staff',staff_serial_no:1}];render();");
 assert.match(app.innerHTML,/Father name/,'staff father name in form and records');
 assert.match(app.innerHTML,/CNIC/,'staff CNIC field in form');
 assert.match(app.innerHTML,/Mobile number/,'staff mobile number in form');
 assert.match(app.innerHTML,/kwfPermissionUpdateV3/,'owner can configure staff financial privileges');
 assert.match(app.innerHTML,/kwfDisableStaffV3/,'owner can disable staff login');
 assert.match(app.innerHTML,/kwfEditStaffV3/,'owner can edit staff identity');
+assert.match(app.innerHTML,/Sr. No./,'staff table includes Sr. No. heading');
+assert.match(app.innerHTML,/kwf-serial-cell">1<\/td>/,'staff row shows permanent serial 1');
 assert.doesNotMatch(app.innerHTML,/1234567890123/,'full CNIC never displayed in directory table');
 run("state.view='dashboard';state.kwfDonorRegistrationStats={registered_donors:42,registered_today:3,registered_last_30_days:9};render();");
 assert.match(app.innerHTML,/Registered donors/,'registered donor count appears in the compact dashboard');
@@ -125,5 +137,10 @@ for (const number of ['3','5','7']) {
 }
 assert.doesNotMatch(app.innerHTML,/Test Father|1234567890123/,'private staff details never appear on public homepage');
 console.log('PASS: Public URL shows six data-backed KWF finance, donor, family and aid cards without authentication');
+run("localStorage.setItem('kwfLanguage','ur');state.language='ur';render();");
+assert.equal(run("localStorage.getItem('kwfLanguage')"),'ur','visitor language choice is saved');
+vm.runInContext(fs.readFileSync('kwf-english-default-v6.js','utf8'),ctx,{timeout:2000});
+assert.equal(run("localStorage.getItem('kwfLanguage')"),'ur','English bootstrap does not overwrite user-selected Urdu');
+console.log('PASS: English-first visit, persistent Urdu preference, staff/family auto serials, clean login and Public Home');
 
 
