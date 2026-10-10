@@ -1,0 +1,8 @@
+
+.kwf-loading-card{text-align:center;max-width:450px}
+.kwf-loading-card h3{font-size:20px;color:#164f36;margin:16px 0 9px}
+.kwf-loading-card .small.muted{line-height:1.8}
+.kwf-loading-spinner{width:50px;height:50px;border-radius:50%;border:5px solid #d7eee0;border-top-color:#13895c;animation:kwfLoadingRotate .9s linear infinite;margin:22px auto}
+.kwf-loading-actions{display:flex;justify-content:center;margin:15px auto}
+@keyframes kwfLoadingRotate{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.kwf-loading-spinner{animation:none}}
