@@ -34,7 +34,7 @@ assert.match(app.innerHTML,/kwfSavePassword/,'new password form exists');
 run("state.authView='login';state.user={id:'10000000-0000-4000-8000-000000000001',email:'test@example.com'};state.profile={full_name:'Test Owner',role:'owner'};state.view='staff';state.families=[{id:'20000000-0000-4000-8000-000000000002',family_code:'F100',family_name:'Test family',category:'general',status:'active',contact_phone:'',address:'',notes:''}];state.expenses=[];state.aid=[];state.donations=[];state.profiles=[{id:state.user.id,full_name:'Test Owner',role:'owner',phone:''}];state.campaigns=[];state.kwfStaffInvites=[];state.kwfActivity=[];render();");
 assert.match(app.innerHTML,/kwfCreateStaffV2/,'owner can create staff username and password');
 assert.match(run("accountView()"),/kwfChangePasswordV2/,'account page supports verified old password change');
-run("state.kwfStaffAccounts=[{user_id:'44444444-4444-4444-8444-444444444444',username:'teststaff',created_at:'2026-10-10T10:00:00Z'}];render();");
+run("state.kwfStaffAccounts=[{user_id:'44444444-4444-4444-8444-444444444444',username:'teststaff',created_at:'2026-10-10T10:00:00Z'}];state.profiles.push({id:'44444444-4444-4444-8444-444444444444',full_name:'Staff Test',role:'staff',phone:''});render();");
 assert.match(app.innerHTML,/kwfResetStaffV2/,'owner can reset staff password');
 assert.match(app.innerHTML,/teststaff/,'staff username listed in owner dashboard');
 assert.match(app.innerHTML,/kwfMarkSeen/,'owner sees staff activity logs');
