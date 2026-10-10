@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KWF Offline Encrypted Backup Reader</title>
+<style>
+:root{color-scheme:light}body{font-family:system-ui,-apple-system,sans-serif;background:#eff7f0;color:#1a3f2c;margin:0;padding:22px}
+main{max-width:610px;margin:30px auto;background:#fff;border:1px solid #d4e6da;border-radius:15px;padding:26px;box-shadow:0 8px 35px #153c2912}
+h1{font-size:23px}h2{font-size:18px}label{display:block;margin:13px 0;font-weight:700}
+input{display:block;margin-top:6px;min-height:41px;max-width:100%;width:100%;border:1px solid #acc7b5;border-radius:9px;padding:9px;background:white;color:#113b2b}
+button{background:#126944;color:white;font-weight:700;padding:12px 19px;border:0;border-radius:9px;cursor:pointer;margin-top:10px}
+p,li{line-height:1.7;font-size:14px}small{color:#526657}.warning{padding:14px;background:#fff6df;border:1px solid #e7d7a8;border-radius:10px}
+#status{margin-top:15px;min-height:30px;font-size:14px}a{color:#0f7047}
+</style></head><body><main>
+<h1>KWF Offline Backup Reader</h1>
+<p>This tool decrypts your <b>.kwfbackup</b> on <b>your own computer</b>.
+Save this HTML file on your hard drive while GitHub and Supabase are working.
+It has <b>no external scripts or network requests</b>.</p>
+<p class="warning"><strong>Private data warning:</strong> The resulting ZIP is NOT encrypted and contains donors' and families' personal information, financial records and any backed-up receipts. Use only on a trusted computer. Store the original encrypted backup separately and delete the unencrypted ZIP after recovery.</p>
+<label>Select encrypted backup file
+<input id="file" type="file" accept=".kwfbackup,application/json"></label>
+<label>Backup passphrase
+<input id="password" type="password" autocomplete="off" placeholder="The passphrase used when creating backup"></label>
+<button id="decrypt">Decrypt &amp; download ZIP</button>
+<div id="status" role="status" aria-live="polite"></div>
+<h2>Restoration instructions</h2>
+<ol>
+<li>When the original Supabase project still works, sign in as Owner at KWF and use <b>My Account → Backup &amp; Restore → Preview / Restore</b>. That imports only missing database records, without overwriting existing records.</li>
+<li>For a <b>new Supabase project</b>, a qualified administrator must first reconstruct the SQL schema, Auth users and storage policies. This ZIP does not contain reusable passwords or service-role credentials.</li>
+<li>Back up the GitHub repositories' source ZIP files separately. This decrypted ZIP contains database records and receipts, not the GitHub website source.</li>
+</ol>
+<small>Format: AES-256-GCM authenticated encryption, PBKDF2-SHA256 (310,000 iterations). All decryption happens in this browser tab.</small>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+function decode(text){
+ const binary=atob(text);const out=new Uint8Array(binary.length);
+ for(let i=0;i<binary.length;i++)out[i]=binary.charCodeAt(i);
+ return out;
+}
+$('decrypt').addEventListener('click',async()=>{
+ const status=$('status');status.textContent='Decrypting on this device…';
+ try{
+   const file=$('file').files?.[0];
+   const password=$('password').value;
+   if(!file)throw Error('Select a .kwfbackup file.');
+   if(!password)throw Error('Enter the backup passphrase.');
+   if(file.size>120*1024*1024)throw Error('File is too large for this offline reader.');
+   const data=JSON.parse(await file.text());
+   if(data.format!=='KWF_AES256_GCM_PBKDF2'||data.version!==1)
+     throw Error('Unrecognized or unsupported KWF backup format.');
+   if(data.iterations!==310000)throw Error('Unexpected password derivation settings.');
+   const enc=new TextEncoder();
+   const keyBase=await crypto.subtle.importKey('raw',enc.encode(password),'PBKDF2',false,['deriveKey']);
+   const key=await crypto.subtle.deriveKey({
+     name:'PBKDF2',salt:decode(data.salt),iterations:data.iterations,hash:'SHA-256'
+   },keyBase,{name:'AES-GCM',length:256},false,['decrypt']);
+   const decrypted=await crypto.subtle.decrypt({name:'AES-GCM',iv:decode(data.iv)},key,decode(data.ciphertext));
+   const blob=new Blob([decrypted],{type:'application/zip'});
+   const link=document.createElement('a');const url=URL.createObjectURL(blob);
+   link.href=url;link.download='KWF_RESTORED_BACKUP_'+(data.created_at||'').slice(0,10)+'.zip';
+   document.body.append(link);link.click();link.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),30000);
+   $('password').value='';
+   status.textContent='Decryption successful. Keep the unencrypted ZIP private.';
+ }catch(err){
+   status.textContent='Could not decrypt: '+String(err.message||err)+'. Check the file and passphrase.';
+ }
+});
+</script></body></html>
