@@ -1,0 +1,325 @@
+// KWF staff, audited edits, owner activity alerts and accessible forms.
+// Loaded AFTER existing app.js, website-enhancements.js and password-recovery.js.
+state.kwfEdit = null;
+state.kwfStaffInvites = [];
+state.kwfActivity = [];
+state.kwfUnread = 0;
+state.kwfStaffBusy = false;
+
+function kwfWord(ur, en) {
+  return state.language === 'ur' ? ur : en;
+}
+function kwfUserRole() {
+  return state.profile && state.profile.role || 'donor';
+}
+function kwfEditAllowed() {
+  return ['owner','admin','staff'].includes(kwfUserRole());
+}
+function kwfOwnerOnly() {
+  return kwfUserRole()==='owner';
+}
+function kwfProfileName(id) {
+  var p = (state.profiles||[]).find(function(x){return x.id===id;});
+  return p ? (p.full_name || p.id.slice(0,8)) : ((id||'').slice(0,8));
+}
+function kwfEditColumn(markup, rows, kind) {
+  if (!kwfEditAllowed() || !Array.isArray(rows) || !rows.length) return markup;
+  return markup.replace(/(<table class="dataTable"><thead><tr>)([\s\S]*?)(<\/tr><\/thead><tbody>)([\s\S]*?)(<\/tbody>)/,
+    function(_all, start, headers, middle, body, end) {
+      var index=0;
+      var newRows=body.replace(/<\/tr>/g,function(){
+        var r=rows[index++];
+        if (!r) return '</tr>';
+        return '<td><button type="button" class="btn tiny kwf-edit-button" data-action="kwfEditRecord" data-kind="'+html(kind)+'" data-id="'+html(r.id)+'">'+kwfWord('ترمیم','Edit')+'</button></td></tr>';
+      });
+      return start+headers+'<th>'+kwfWord('ترمیم','Edit')+'</th>'+middle+newRows+end;
+    });
+}
+const kwfOldFamiliesView = familiesView;
+familiesView = function() { return kwfEditColumn(kwfOldFamiliesView(),state.families,'beneficiary'); };
+const kwfOldExpensesView = expensesView;
+expensesView = function() { return kwfEditColumn(kwfOldExpensesView(),state.expenses,'expense'); };
+const kwfOldAidView = aidView;
+aidView = function() { return kwfEditColumn(kwfOldAidView(),state.aid,'aid'); };
+const kwfOldCampaignsCards = campaignsCards;
+campaignsCards = function(records,compact) {
+  if (!kwfEditAllowed() || !(records||[]).length) return kwfOldCampaignsCards(records,compact);
+  return records.filter(function(x){return !x.archived_at;}).map(function(rec){
+    var card=kwfOldCampaignsCards([rec],compact);
+    return card.replace('</article>',
+      '<div class="record-tools"><button type="button" class="btn tiny kwf-edit-button" data-action="kwfEditRecord" data-kind="campaign" data-id="'+html(rec.id)+'">'+kwfWord('ترمیم','Edit')+'</button></div></article>');
+  }).join('');
+};
+const kwfOldDonationsView = typeof donationsView === 'function' ? donationsView : null;
+if (kwfOldDonationsView) {
+  donationsView = function(){
+    if (kwfUserRole()==='staff') return '<section class="panel"><h3>'+kwfWord('عطیات کی منظوری','Donation approvals')+'</h3><p>'+kwfWord('صرف Owner یا Admin عطیات کی تصدیق کر سکتے ہیں۔','Only Owner or Admin may review donations.')+'</p></section>';
+    return kwfOldDonationsView();
+  };
+}
+
+function kwfInputField(name,label,value,kind,required,items) {
+  var textValue = value==null ? '' : String(value);
+  var field='<label class="kwf-field"><span>'+html(label)+'</span>';
+  if (kind==='select') {
+    field+='<select name="'+html(name)+'"'+(required?' required':'')+'>';
+    (items||[]).forEach(function(o){
+      field+='<option value="'+html(o[0])+'"'+(String(o[0])===textValue?' selected':'')+'>'+html(o[1])+'</option>';
+    });
+    field+='</select>';
+  } else if (kind==='textarea') {
+    field+='<textarea name="'+html(name)+'" rows="2"'+(required?' required':'')+'>'+html(textValue)+'</textarea>';
+  } else {
+    var min = kind==='number' ? ' min="0.01" step="0.01"' : '';
+    field+='<input name="'+html(name)+'" type="'+html(kind||'text')+'" value="'+html(textValue)+'"'+(required?' required':'')+min+'>';
+  }
+  return field+'</label>';
+}
+function kwfEditModal() {
+  if (!state.kwfEdit) return '';
+  var edit=state.kwfEdit, rec=edit.record, kind=edit.kind, fields=[];
+  if (kind==='beneficiary') {
+    fields=[
+      kwfInputField('family_code',kwfWord('فیملی کوڈ','Family code'),rec.family_code,'text',true),
+      kwfInputField('family_name',kwfWord('خاندان کا نام','Family name'),rec.family_name,'text',true),
+      kwfInputField('contact_phone',kwfWord('فون','Phone'),rec.contact_phone,'tel'),
+      kwfInputField('category',kwfWord('قسم','Category'),rec.category,'select',true,
+        ['general','orphan','widow','medical','education'].map(function(x){return [x,x];})),
+      kwfInputField('status',kwfWord('حیثیت','Status'),rec.status,'select',true,[['active','Active'],['inactive','Inactive']]),
+      kwfInputField('address',kwfWord('پتہ','Address'),rec.address,'textarea'),
+      kwfInputField('notes',kwfWord('نوٹس','Notes'),rec.notes,'textarea')
+    ];
+  } else if (kind==='campaign') {
+    fields=[
+      kwfInputField('title',kwfWord('مہم کا نام','Campaign title'),rec.title,'text',true),
+      kwfInputField('target_pkr',kwfWord('ہدف رقم','Target PKR'),rec.target_pkr,'number',true),
+      kwfInputField('status',kwfWord('حیثیت','Status'),rec.status,'select',true,[['active','Active'],['paused','Paused']]),
+      kwfInputField('description',kwfWord('تفصیل','Description'),rec.description,'textarea')
+    ];
+  } else if (kind==='expense') {
+    fields=[
+      kwfInputField('category',kwfWord('قسم','Category'),rec.category,'select',true,
+       ['operations','transport','medical','ration','other'].map(function(x){return [x,x];})),
+      kwfInputField('amount_pkr',kwfWord('رقم','Amount PKR'),rec.amount_pkr,'number',true),
+      kwfInputField('spent_on',kwfWord('تاریخ','Date'),rec.spent_on,'date',true),
+      kwfInputField('description',kwfWord('تفصیل','Description'),rec.description,'textarea',true)
+    ];
+  } else if (kind==='aid') {
+    var families=(state.families||[]).map(function(f){return [f.id,f.family_code+' — '+f.family_name];});
+    var campaigns=[['',kwfWord('بغیر مہم','None')]].concat((state.campaigns||[]).map(function(c){return [c.id,c.title];}));
+    fields=[
+      kwfInputField('beneficiary_id',kwfWord('خاندان','Family'),rec.beneficiary_id,'select',true,families),
+      kwfInputField('aid_type',kwfWord('امداد کی قسم','Aid type'),rec.aid_type,'select',true,
+       ['ration','medical','cash','education','other'].map(function(x){return [x,x];})),
+      kwfInputField('amount_pkr',kwfWord('رقم','Amount PKR'),rec.amount_pkr,'number',true),
+      kwfInputField('aided_on',kwfWord('تاریخ','Date'),rec.aided_on,'date',true),
+      kwfInputField('campaign_id',kwfWord('مہم','Campaign'),rec.campaign_id||'','select',false,campaigns),
+      kwfInputField('description',kwfWord('تفصیل','Description'),rec.description,'textarea')
+    ];
+  }
+  return '<div class="kwf-modal-backdrop" role="presentation"><section class="kwf-modal" role="dialog" aria-modal="true" aria-label="'+kwfWord('ریکارڈ میں ترمیم','Edit record')+'"><header class="kwf-modal-head"><h2>'+kwfWord('ریکارڈ میں ترمیم','Edit record')+'</h2><button type="button" class="btn ghost tiny" data-action="kwfCloseEdit">✕</button></header>'+
+    '<form data-form="kwfSaveEdit"><div class="kwf-edit-grid">'+fields.join('')+'</div>'+
+    kwfInputField('reason',kwfWord('تبدیلی کی وجہ (کم از کم 5 حروف)','Reason for change (5+ characters)'),'','textarea',true)+
+    '<div class="kwf-modal-actions"><button type="button" class="btn ghost" data-action="kwfCloseEdit">'+kwfWord('منسوخ','Cancel')+'</button>'+
+    '<button class="btn" type="submit">'+kwfWord('تبدیلی محفوظ کریں','Save changes')+'</button></div></form></section></div>';
+}
+
+function kwfStaffMemberRows(){
+  return (state.profiles||[]).map(function(p){
+    var buttons='—';
+    if (kwfOwnerOnly() && p.role!=='owner') {
+      buttons='<div class="kwf-row-actions">';
+      if (p.role!=='staff') buttons+='<button class="btn tiny ghost" data-action="kwfSetRole" data-id="'+html(p.id)+'" data-role="staff">'+kwfWord('Staff بنائیں','Make Staff')+'</button>';
+      if (p.role!=='admin') buttons+='<button class="btn tiny ghost" data-action="kwfSetRole" data-id="'+html(p.id)+'" data-role="admin">'+kwfWord('Admin بنائیں','Make Admin')+'</button>';
+      if (p.role!=='donor') buttons+='<button class="btn tiny danger" data-action="kwfSetRole" data-id="'+html(p.id)+'" data-role="donor">'+kwfWord('رسائی ختم کریں','Remove access')+'</button>';
+      buttons+='</div>';
+    }
+    return '<tr><td><b>'+html(p.full_name||kwfProfileName(p.id))+'</b><div class="small muted">'+html((p.id||'').slice(0,8))+'…</div></td>'+
+      '<td>'+html(p.phone||'—')+'</td><td><span class="badge">'+html(p.role)+'</span></td><td>'+buttons+'</td></tr>';
+  });
+}
+function kwfStaffInviteRows(){
+  return (state.kwfStaffInvites||[]).map(function(inv){
+    return '<tr><td>'+html(inv.email)+'</td><td><span class="badge">'+html(inv.status)+'</span></td><td>'+
+      shortDate(inv.invited_at)+'</td><td>'+
+      (inv.status==='revoked'?'—':'<button type="button" class="btn tiny danger" data-action="kwfCancelInvite" data-id="'+html(inv.id)+'">'+kwfWord('منسوخ','Revoke')+'</button>')+
+      '</td></tr>';
+  });
+}
+function kwfActivityPanel(){
+  if (!kwfOwnerOnly()) return '';
+  var unread=Number(state.kwfUnread||0);
+  var items=(state.kwfActivity||[]).slice(0,75);
+  var rows=items.map(function(a){
+    var style=a.actor_role==='staff' && !a.seen_by_owner_at ? ' class="kwf-unread-row"' : '';
+    return '<tr'+style+'><td>'+html(shortDate(a.created_at))+'</td><td>'+html(kwfProfileName(a.actor_id))+
+      '<div class="small muted">'+html(a.actor_role||'—')+'</div></td><td>'+html(a.record_type||'—')+
+      '</td><td>'+html(a.action||'—')+'</td><td class="kwf-long">'+html(a.reason||'—')+'</td></tr>';
+  });
+  return '<section class="panel kwf-activity-panel" id="kwf-activity"><div class="panelhead"><h3>'+kwfWord('Staff تبدیلیاں / Audit Log','Staff activity / Audit log')+
+    '</h3><div class="kwf-row-actions"><span class="badge">'+unread+' '+kwfWord('نئی اطلاعات','new alerts')+'</span>'+
+    '<button class="btn tiny ghost" type="button" data-action="kwfMarkSeen">'+kwfWord('سب دیکھ لیا','Mark all read')+'</button></div></div>'+
+    '<p class="muted small">'+kwfWord('ہر ترمیم کا نام، تاریخ اور وجہ سرور پر محفوظ ہوتی ہے۔','The server saves who changed a record, the time and reason.')+'</p>'+
+    table([kwfWord('تاریخ','Date'),kwfWord('ممبر','Member'),kwfWord('ریکارڈ','Record'),kwfWord('عمل','Action'),kwfWord('وجہ','Reason')],rows)+'</section>';
+}
+staffView = function(){
+  if (!isStaff()) return limited();
+  var form='';
+  if (kwfOwnerOnly()){
+    form='<section class="panel"><h3>'+kwfWord('Supporting Staff شامل کریں','Add supporting staff')+'</h3>'+
+      '<p class="muted">'+kwfWord('اس کی ای میل پہلے منظور کریں۔ ممبر کو ویب سائٹ پر اسی ای میل سے رجسٹر ہو کر تصدیق کرنا ہوگا۔','Approve their email first. They must register and verify that email on the website. No invitation email is automatically sent.')+'</p>'+
+      '<form data-form="kwfStaffInvite" class="kwf-invite-form"><label class="kwf-field"><span>'+kwfWord('Staff ای میل','Staff email')+'</span>'+
+      '<input name="email" type="email" autocomplete="email" placeholder="name@example.com" required maxlength="254"></label>'+
+      '<button class="btn" type="submit">'+kwfWord('Staff شامل کریں','Add staff')+'</button></form>'+
+      '<p class="small muted">'+kwfWord('ممبر کے ساتھ یہ لنک شیئر کریں:','Send this registration link to the member:')+
+      ' <a target="_blank" rel="noopener" href="https://kalwalwf.github.io/">https://kalwalwf.github.io/</a></p></section>'+
+      '<section class="panel"><h3>'+kwfWord('Staff دعوتیں','Staff invitations')+'</h3>'+
+      table([kwfWord('ای میل','Email'),kwfWord('حیثیت','Status'),kwfWord('تاریخ','Date'),kwfWord('انتظام','Manage')],kwfStaffInviteRows())+'</section>';
+  }
+  return '<h2 class="sectionTitle">'+kwfWord('اسٹاف مینجمنٹ','Staff Management')+'</h2>'+form+
+    '<section class="panel"><h3>'+kwfWord('رجسٹرڈ ممبران','Registered members')+'</h3>'+
+    table([kwfWord('نام','Name'),kwfWord('فون','Phone'),kwfWord('رول','Role'),kwfWord('انتظام','Manage')],kwfStaffMemberRows())+
+    '</section>'+kwfActivityPanel();
+};
+
+const kwfOldShell = shell;
+shell = function(){
+  var markup=kwfOldShell();
+  if (kwfUserRole()==='staff'){
+    markup=markup.replace(/<button data-view="(?:donations|settings|staff)"[^>]*>[\s\S]*?<\/button>/g,'');
+  }
+  if (kwfOwnerOnly()) {
+    markup=markup.replace('<div class="topactions">',
+      '<div class="topactions"><button class="btn tiny kwf-alert-button" data-action="kwfActivity" title="Staff activity">'+
+      '🔔 '+html(String(state.kwfUnread||0))+'</button>');
+  }
+  if (state.kwfEdit) markup=markup.replace('</main>',kwfEditModal()+'</main>');
+  return markup;
+};
+
+const kwfOldRefresh = refresh;
+refresh = async function(silent){
+  // A verified, owner-approved invitation is activated on the first login.
+  if (state.client && state.user){
+    try { await state.client.rpc('kwf_accept_staff_invitation'); }
+    catch(e){ console.warn('Staff invitation check failed',e); }
+  }
+  await kwfOldRefresh(silent);
+  if (state.client && kwfOwnerOnly()){
+    try {
+      var items=await Promise.all([
+        state.client.from('staff_invites').select('*').order('invited_at',{ascending:false}).limit(200),
+        state.client.from('record_actions').select('id,record_type,action,actor_id,actor_role,reason,created_at,seen_by_owner_at').order('created_at',{ascending:false}).limit(250),
+        state.client.from('record_actions').select('id',{head:true,count:'exact'}).eq('actor_role','staff').is('seen_by_owner_at',null)
+      ]);
+      for (var x of items) if (x.error) throw x.error;
+      state.kwfStaffInvites=items[0].data||[];
+      state.kwfActivity=items[1].data||[];
+      state.kwfUnread=items[2].count||0;
+    }catch(err){ console.warn('KWF staff activity unavailable:',errorStr(err)); }
+    render();
+  } else {
+    state.kwfStaffInvites=[];
+    state.kwfActivity=[];
+    state.kwfUnread=0;
+  }
+};
+
+const kwfOldProcessForm = processForm;
+processForm = async function(form){
+  var action=form.dataset.form;
+  if (action!=='kwfStaffInvite' && action!=='kwfSaveEdit') return kwfOldProcessForm(form);
+  if (state.kwfStaffBusy) return;
+  state.kwfStaffBusy=true;
+  var button=form.querySelector('button[type="submit"]');
+  if (button) button.disabled=true;
+  try{
+    if (action==='kwfStaffInvite'){
+      if (!kwfOwnerOnly()) throw new Error('Owner only');
+      var email=String(new FormData(form).get('email')||'').trim();
+      var result=await state.client.rpc('kwf_invite_staff',{p_email:email});
+      if (result.error) throw result.error;
+      var msg=result.data&&result.data.status==='active' ?
+        kwfWord('رجسٹرڈ ممبر کو Staff بنا دیا گیا۔','Registered member added as staff.') :
+        kwfWord('Staff دعوت محفوظ ہے۔ ممبر کو ویب سائٹ پر رجسٹر اور ای میل Verify کرنے کو کہیں۔','Invitation saved. Ask the member to register and verify email on the website.');
+      notify(msg);
+      await refresh(true);
+      return;
+    }
+    if (!kwfEditAllowed() || !state.kwfEdit) throw new Error('Access denied');
+    var data=Object.fromEntries(new FormData(form).entries());
+    var reason=String(data.reason||'').trim();
+    delete data.reason;
+    if (reason.length<5) throw new Error(kwfWord('تبدیلی کی وجہ کم از کم 5 حروف ہو۔','Please enter a reason of at least 5 characters.'));
+    var kind=state.kwfEdit.kind, id=state.kwfEdit.record.id;
+    var result2=await state.client.rpc('kwf_update_record',{p_kind:kind,p_id:id,p_changes:data,p_reason:reason});
+    if (result2.error) throw result2.error;
+    state.kwfEdit=null;
+    notify(kwfWord('ترمیم اور Audit Log محفوظ ہوگئے۔','Changes and audit log saved.'));
+    await refresh(true);
+  }catch(err){notify(errorStr(err),true);console.error(err);}
+  finally {state.kwfStaffBusy=false;if (button&&button.isConnected) button.disabled=false;}
+};
+
+const kwfOldClickAction = clickAction;
+clickAction = async function(el){
+  var act=el.dataset.action;
+  try{
+    if (act==='kwfEditRecord'){
+      if (!kwfEditAllowed()) throw new Error('No edit permission');
+      var kind=el.dataset.kind,id=el.dataset.id;
+      var list=kind==='beneficiary'?state.families:kind==='expense'?state.expenses:kind==='aid'?state.aid:kind==='campaign'?state.campaigns:[];
+      var r=list.find(function(x){return x.id===id;});
+      if (!r) throw new Error('Record not found');
+      state.kwfEdit={kind:kind,record:r};
+      render();
+      return;
+    }
+    if (act==='kwfCloseEdit'){state.kwfEdit=null;render();return;}
+    if (act==='kwfSetRole'){
+      if (!kwfOwnerOnly()) throw new Error('Owner only');
+      var who=kwfProfileName(el.dataset.id),role=el.dataset.role;
+      if (!['donor','staff','admin'].includes(role)) return;
+      if (!confirm(kwfWord('کیا '+who+' کا رول '+role+' کرنا ہے؟','Change '+who+' to '+role+'?'))) return;
+      var r2=await state.client.rpc('kwf_set_staff_role',{p_user_id:el.dataset.id,p_role:role});
+      if (r2.error) throw r2.error;
+      await refresh(true); notify(kwfWord('رسائی تبدیل ہوگئی۔','Access updated.'));return;
+    }
+    if (act==='kwfCancelInvite'){
+      if (!kwfOwnerOnly()) throw new Error('Owner only');
+      if (!confirm(kwfWord('یہ دعوت منسوخ کریں؟','Revoke this invitation?'))) return;
+      var r3=await state.client.rpc('kwf_cancel_staff_invite',{p_invite_id:el.dataset.id});
+      if (r3.error) throw r3.error;
+      await refresh(true);notify(kwfWord('دعوت منسوخ ہوگئی۔','Invitation revoked.'));return;
+    }
+    if (act==='kwfMarkSeen'){
+      if (!kwfOwnerOnly()) throw new Error('Owner only');
+      var r4=await state.client.rpc('kwf_mark_staff_activity_seen');
+      if (r4.error) throw r4.error;
+      await refresh(true);notify(kwfWord('تمام اطلاعات پڑھ لی گئیں۔','Alerts marked as read.'));return;
+    }
+    if (act==='kwfActivity'){
+      if (!kwfOwnerOnly()) return;
+      state.view='staff';render();
+      document.getElementById('kwf-activity')?.scrollIntoView({behavior:'smooth',block:'start'});
+      return;
+    }
+  }catch(err){notify(errorStr(err),true);console.error(err);return;}
+  return kwfOldClickAction(el);
+};
+
+// Refresh owner notification badges once a minute while the admin app is open.
+setInterval(function(){
+  if (!state.client || !state.user || !kwfOwnerOnly()) return;
+  state.client.from('record_actions').select('id',{head:true,count:'exact'})
+    .eq('actor_role','staff').is('seen_by_owner_at',null)
+    .then(function(r) {
+      if (r.error) return;
+      if (state.kwfUnread !== r.count){
+        var prev=state.kwfUnread;
+        state.kwfUnread=r.count||0;
+        if (state.kwfUnread>prev) notify(kwfWord('Staff نے ریکارڈ میں نئی تبدیلی کی ہے۔','New staff activity requires review.'));
+        render();
+      }
+    }).catch(console.warn);
+},60000);
