@@ -5,6 +5,43 @@ state.kwfStaffInvites = [];
 state.kwfActivity = [];
 state.kwfUnread = 0;
 state.kwfStaffBusy = false;
+state.kwfInviteEmailBusy = false;
+
+// Staff approval and actual email delivery are independent operations.
+// A provider-accepted request is NOT proof of inbox delivery.
+async function kwfSendStaffEmail(email){
+  if(!kwfOwnerOnly()) throw new Error('Only the Owner can send invitations');
+  if(!state.client || !state.client.functions) throw new Error('Email function unavailable. Refresh this page.');
+  var result=await state.client.functions.invoke('kwf-send-staff-invite',{body:{email:String(email).trim()}});
+  var response=result.data||{};
+  if(result.error){
+    if(result.error.context && typeof result.error.context.json==='function'){
+      try{response=await result.error.context.json();}catch(e){/* network errors lack JSON */}
+    }
+    throw new Error(response.error || response.provider_error || result.error.message || 'Invitation email failed');
+  }
+  if(response.status==='accepted'){
+    notify(kwfWord('Supabase نے ای میل بھیجنے کی درخواست قبول کی۔ وصول کنندہ Inbox/Spam دیکھے۔','Email request accepted by Supabase. Ask the recipient to check Inbox/Spam.'));
+  }else if(response.status==='existing_account'){
+    notify(kwfWord('یہ ای میل پہلے سے رجسٹرڈ ہے؛ ممبر Login یا Forgot Password استعمال کرے۔','This email already has an account. Ask the member to sign in or use Forgot Password.'));
+  }else{
+    notify(response.message || 'Invitation result: '+String(response.status||'unknown'));
+  }
+  return response;
+}
+function kwfDeliveryLabel(inv){
+  var stateValue=inv.delivery_state||'not_requested';
+  if(stateValue==='accepted') return kwfWord('بھیجنے کی درخواست قبول ہوئی؛ Inbox/Spam دیکھیں','Request accepted; check Inbox/Spam');
+  if(stateValue==='sending') return kwfWord('بھیج رہے ہیں…','Sending…');
+  if(stateValue==='failed') return kwfWord('ای میل نہیں گئی','Email not sent');
+  if(stateValue==='existing_account') return kwfWord('اکاؤنٹ پہلے سے موجود','Account already exists');
+  return kwfWord('ای میل ابھی نہیں بھیجی گئی','Email not sent yet');
+}
+function kwfManualInvitationHref(email){
+  var subject='KWF Supporting Staff Invitation';
+  var body='You have been approved to join Kalwal Welfare Foundation as supporting staff.\n\nPlease visit https://kalwalwf.github.io/ and use Create donor account with this exact email, then verify the email and sign in. Your staff access is approved by the Owner.\n\nKWF Admin Team';
+  return 'mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+}
 
 function kwfWord(ur, en) {
   return state.language === 'ur' ? ur : en;
@@ -140,10 +177,23 @@ function kwfStaffMemberRows(){
 }
 function kwfStaffInviteRows(){
   return (state.kwfStaffInvites||[]).map(function(inv){
+    var delivery=kwfDeliveryLabel(inv);
+    var deliveryDetail=inv.delivery_state==='failed' && inv.last_email_response ?
+      '<div class="small kwf-invite-failed">'+html(inv.last_email_response)+'</div>' : '';
+    var manage='—';
+    if(inv.status!=='revoked'){
+      manage='<div class="kwf-row-actions">';
+      if(inv.status==='pending'){
+        manage+='<button type="button" class="btn tiny kwf-invite-send" data-action="kwfSendInvite" data-email="'+html(inv.email)+'">'+
+          (inv.delivery_state==='accepted'?kwfWord('دوبارہ ای میل بھیجیں','Resend email'):kwfWord('ای میل بھیجیں','Send email'))+'</button>';
+        manage+='<a class="btn tiny ghost kwf-invite-manual" href="'+html(kwfManualInvitationHref(inv.email))+'">'+
+          kwfWord('Gmail/Email سے بھیجیں','Send manually')+'</a>';
+      }
+      manage+='<button type="button" class="btn tiny danger" data-action="kwfCancelInvite" data-id="'+html(inv.id)+'">'+kwfWord('منسوخ','Revoke')+'</button></div>';
+    }
     return '<tr><td>'+html(inv.email)+'</td><td><span class="badge">'+html(inv.status)+'</span></td><td>'+
-      shortDate(inv.invited_at)+'</td><td>'+
-      (inv.status==='revoked'?'—':'<button type="button" class="btn tiny danger" data-action="kwfCancelInvite" data-id="'+html(inv.id)+'">'+kwfWord('منسوخ','Revoke')+'</button>')+
-      '</td></tr>';
+      '<span class="kwf-delivery-state">'+html(delivery)+'</span>'+deliveryDetail+'</td><td>'+
+      shortDate(inv.invited_at)+'</td><td>'+manage+'</td></tr>';
   });
 }
 function kwfActivityPanel(){
@@ -167,14 +217,16 @@ staffView = function(){
   var form='';
   if (kwfOwnerOnly()){
     form='<section class="panel"><h3>'+kwfWord('Supporting Staff شامل کریں','Add supporting staff')+'</h3>'+
-      '<p class="muted">'+kwfWord('اس کی ای میل پہلے منظور کریں۔ ممبر کو ویب سائٹ پر اسی ای میل سے رجسٹر ہو کر تصدیق کرنا ہوگا۔','Approve their email first. They must register and verify that email on the website. No invitation email is automatically sent.')+'</p>'+
+      '<p class="muted">'+kwfWord('Staff کی ای میل منظور کریں۔ اب دعوت کی ای میل بھیجنے کی کوشش ہوگی۔ بیرونی ای میل کے لیے Supabase Custom SMTP ضروری ہے۔','Approve their email. The website will request a Supabase invitation email. Configure Custom SMTP for reliable delivery to external addresses.')+'</p>'+
       '<form data-form="kwfStaffInvite" class="kwf-invite-form"><label class="kwf-field"><span>'+kwfWord('Staff ای میل','Staff email')+'</span>'+
       '<input name="email" type="email" autocomplete="email" placeholder="name@example.com" required maxlength="254"></label>'+
       '<button class="btn" type="submit">'+kwfWord('Staff شامل کریں','Add staff')+'</button></form>'+
       '<p class="small muted">'+kwfWord('ممبر کے ساتھ یہ لنک شیئر کریں:','Send this registration link to the member:')+
       ' <a target="_blank" rel="noopener" href="https://kalwalwf.github.io/">https://kalwalwf.github.io/</a></p></section>'+
       '<section class="panel"><h3>'+kwfWord('Staff دعوتیں','Staff invitations')+'</h3>'+
-      table([kwfWord('ای میل','Email'),kwfWord('حیثیت','Status'),kwfWord('تاریخ','Date'),kwfWord('انتظام','Manage')],kwfStaffInviteRows())+'</section>';
+      '<p class="small muted">'+kwfWord('Pending صرف اجازت کو ظاہر کرتا ہے، ای میل موصول ہونے کی تصدیق نہیں۔','Pending means approval is awaiting account activation, not email delivery.')+'</p>'+
+      '<p class="small"><a target="_blank" rel="noopener" href="https://supabase.com/dashboard/project/ekthzqacvsjfngtyvplx/auth/smtp">'+kwfWord('Supabase Email (SMTP) سیٹنگ کھولیں','Configure Supabase email (SMTP)')+'</a></p>'+
+      table([kwfWord('ای میل','Email'),kwfWord('حیثیت','Status'),kwfWord('ای میل کی حالت','Email delivery'),kwfWord('تاریخ','Date'),kwfWord('انتظام','Manage')],kwfStaffInviteRows())+'</section>';
   }
   return '<h2 class="sectionTitle">'+kwfWord('اسٹاف مینجمنٹ','Staff Management')+'</h2>'+form+
     '<section class="panel"><h3>'+kwfWord('رجسٹرڈ ممبران','Registered members')+'</h3>'+
@@ -239,10 +291,15 @@ processForm = async function(form){
       var email=String(new FormData(form).get('email')||'').trim();
       var result=await state.client.rpc('kwf_invite_staff',{p_email:email});
       if (result.error) throw result.error;
-      var msg=result.data&&result.data.status==='active' ?
-        kwfWord('رجسٹرڈ ممبر کو Staff بنا دیا گیا۔','Registered member added as staff.') :
-        kwfWord('Staff دعوت محفوظ ہے۔ ممبر کو ویب سائٹ پر رجسٹر اور ای میل Verify کرنے کو کہیں۔','Invitation saved. Ask the member to register and verify email on the website.');
-      notify(msg);
+      if(result.data&&result.data.status==='active'){
+        notify(kwfWord('ممبر پہلے سے رجسٹرڈ ہے اور Staff بنا دیا گیا ہے۔','Existing verified member activated as staff.'));
+      }else{
+        try{
+          await kwfSendStaffEmail(email);
+        }catch(emailError){
+          notify(kwfWord('دعوت محفوظ ہے لیکن ای میل نہیں گئی: ','Staff approved but email could not be sent: ')+errorStr(emailError),true);
+        }
+      }
       await refresh(true);
       return;
     }
@@ -265,6 +322,21 @@ const kwfOldClickAction = clickAction;
 clickAction = async function(el){
   var act=el.dataset.action;
   try{
+    if(act==='kwfSendInvite'){
+      if(!kwfOwnerOnly()) throw new Error('Owner only');
+      if(state.kwfInviteEmailBusy) return;
+      state.kwfInviteEmailBusy=true;
+      el.disabled=true;
+      try{
+        await kwfSendStaffEmail(el.dataset.email);
+      }catch(sendError){
+        notify(kwfWord('ای میل نہیں گئی: ','Email not sent: ')+errorStr(sendError),true);
+      }finally{
+        state.kwfInviteEmailBusy=false;
+        await refresh(true);
+      }
+      return;
+    }
     if (act==='kwfEditRecord'){
       if (!kwfEditAllowed()) throw new Error('No edit permission');
       var kind=el.dataset.kind,id=el.dataset.id;
