@@ -14,6 +14,11 @@ on:
       - 'kwf-auth-fixes.css'
       - 'kwf-accounts-v2.js'
       - 'kwf-accounts-v2.css'
+      - 'kwf-portal-v3.js'
+      - 'kwf-portal-v3.css'
+      - 'kwf-connection-v3.js'
+      - 'kwf-connection-v3.css'
+      - 'kwf-supabase-entry.mjs'
       - 'smoke-test.cjs'
 
 permissions:
@@ -51,18 +56,11 @@ jobs:
           unzip -q kwf-original/KWF_PC_Pages_Website.zip -d _site
           test -f _site/index.html
           test -f _site/app.js
-          python3 - <<'PY'
-          import pathlib,re
-          html=pathlib.Path('_site/index.html').read_text()
-          print('KWF-DIAG-HTML',html[:7800])
-          s=pathlib.Path('_site/app.js').read_text()
-          for name in ('setupView','init','start','render','refresh','getRows','shell','staffView','donationsView','settingsView','dashboardView','familiesView','accountView','processForm','clickAction'):
-            pos=s.find('function '+name+'(')
-            if pos<0: pos=s.find('const '+name+'=')
-            if pos>=0:
-              print('KWF-DIAG-FUNC',name,s[pos:pos+7000])
-          print('KWF-DIAG-END')
-          PY
+          # Keep the Supabase client on the same GitHub Pages origin to avoid a
+          # third-party CDN timeout showing a false "not connected" message.
+          npm install --no-save --no-audit --no-fund @supabase/supabase-js@2.57.0 esbuild@0.25.12
+          ./node_modules/.bin/esbuild kwf-supabase-entry.mjs --bundle --format=esm --platform=browser --target=es2020 --minify --outfile=_site/supabase-sdk.js
+          test -s _site/supabase-sdk.js
           python3 - <<'PY'
           import pathlib
           p=pathlib.Path('_site/app.js')
@@ -81,7 +79,22 @@ jobs:
           cat kwf-auth-fixes.css >> _site/style.css
           cat kwf-accounts-v2.js >> _site/app.js
           cat kwf-accounts-v2.css >> _site/style.css
+          cat kwf-portal-v3.js >> _site/app.js
+          cat kwf-portal-v3.css >> _site/style.css
+          cat kwf-connection-v3.js >> _site/app.js
+          cat kwf-connection-v3.css >> _site/style.css
+          # Both initial auth and old-password verification now load from Pages.
+          python3 - <<'PY'
+          import pathlib
+          p=pathlib.Path('_site/app.js')
+          source=p.read_text(encoding='utf-8')
+          cdn="import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/+esm')"
+          assert source.count(cdn)>=2, 'Expected both Supabase SDK imports'
+          source=source.replace(cdn,"import('./supabase-sdk.js')")
+          p.write_text(source,encoding='utf-8')
+          PY
           node --check _site/app.js
+          node --check _site/supabase-sdk.js
           node smoke-test.cjs _site/app.js
           grep -q 'kwfStaffInvite' _site/app.js
           grep -q 'kwfResendVerification' _site/app.js
@@ -120,6 +133,24 @@ jobs:
           fi
           grep -q 'KWF_CONFIG' _site/config.js
           grep -Eq 'sb_publishable_|eyJ' _site/config.js
+          # Public publishable-only config is embedded directly in index.html,
+          # removing an extra script request that fails on slow connections.
+          python3 - <<'PY'
+          import pathlib
+          p=pathlib.Path('_site/index.html')
+          config=pathlib.Path('_site/config.js').read_text(encoding='utf-8').strip()
+          assert 'window.KWF_CONFIG' in config
+          assert not any(secret in config.lower() for secret in ('service_role','sb_secret_'))
+          html=p.read_text(encoding='utf-8')
+          needle='<script src="./config.js"></script>'
+          assert html.count(needle)==1, 'Index expected a single public config script'
+          html=html.replace(needle,'<script>'+config.replace('</script','<\\/script')+'</script>')
+          placeholder='<div id="app" aria-live="polite"></div>'
+          assert placeholder in html
+          html=html.replace(placeholder,'<div id="app" aria-live="polite"><div style="margin:22vh auto;max-width:420px;padding:24px;text-align:center;font:16px system-ui,sans-serif;color:#19523b">KWF Welfare Portal — Connecting…</div></div>')
+          p.write_text(html,encoding='utf-8')
+          PY
+          test -s _site/supabase-sdk.js
           touch _site/.nojekyll
           echo 'KWF website ready with public Supabase connection.'
 
