@@ -1,0 +1,93 @@
+name: Deploy KWF to KalwalWF Website
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-kalwalwf.yml'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: kalwalwf-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout new KalwalWF site
+        uses: actions/checkout@v4
+
+      - name: Checkout existing public KWF site source
+        uses: actions/checkout@v4
+        with:
+          repository: talhakalwal21/kwf-welfare-web
+          ref: main
+          path: kwf-original
+          persist-credentials: false
+
+      - name: Assemble website with annual dashboard and delete controls
+        shell: bash
+        env:
+          KWF_SUPABASE_URL: ${{ vars.KWF_SUPABASE_URL }}
+          KWF_SUPABASE_PUBLIC_KEY: ${{ vars.KWF_SUPABASE_PUBLIC_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+          unzip -q kwf-original/KWF_PC_Pages_Website.zip -d _site
+          test -f _site/index.html
+          test -f _site/app.js
+          cat kwf-original/website-enhancements.js >> _site/app.js
+          cat kwf-original/website-enhancements.css >> _site/style.css
+          node --check _site/app.js
+
+          # Use GitHub public variables if configured. Otherwise, copy the
+          # publishable-key-only config already live on the existing site.
+          if [[ -n "$KWF_SUPABASE_URL" && -n "$KWF_SUPABASE_PUBLIC_KEY" ]]; then
+            python3 - <<'PY'
+          import json, os, pathlib
+          values = {
+            'supabaseUrl': os.environ['KWF_SUPABASE_URL'].strip(),
+            'supabasePublishableKey': os.environ['KWF_SUPABASE_PUBLIC_KEY'].strip(),
+            'foundationName': 'Kalwal Welfare Foundation',
+          }
+          pathlib.Path('_site/config.js').write_text(
+            'window.KWF_CONFIG = Object.freeze(' + json.dumps(values) + ');\n',
+            encoding='utf-8'
+          )
+          PY
+          else
+            curl --fail --location --retry 3 --retry-delay 2 --silent --show-error \
+              https://talhakalwal21.github.io/kwf-welfare-web/config.js \
+              --output _site/config.js
+          fi
+          grep -q 'KWF_CONFIG' _site/config.js
+          grep -Eq 'sb_publishable_|eyJ' _site/config.js
+          touch _site/.nojekyll
+          echo 'KWF website ready with public Supabase connection.'
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload website artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy KWF website
+        id: deployment
+        uses: actions/deploy-pages@v4
