@@ -90,12 +90,9 @@ staffView=function(){
     kwfAccountField('confirm_password',kwfV3Text('دوبارہ پاس ورڈ','Confirm password'),'password',true,'new-password')+
     '<div class="kwf-row-actions"><button type="submit" class="btn">'+kwfV3Text('محفوظ کریں','Save')+'</button>'+
     '<button class="btn ghost" data-action="kwfCloseResetStaffV2" type="button">'+kwfV3Text('منسوخ','Cancel')+'</button></div></form></section>':'';
-  const legacy=kwfAccountPriorStaffView(); // Existing email invitation and audit history are preserved.
   return '<h2 class="sectionTitle">'+kwfV3Text('Staff Management','Staff Management')+'</h2>'+
     form+reset+'<section class="panel"><h3>'+kwfV3Text('Staff کے ریکارڈ','Staff records')+'</h3>'+
-    kwfStaffTableV3()+'</section>'+kwfStaffPermissionPanelV3()+
-    '<section class="kwf-v3-secondary"><h3>'+kwfV3Text('دیگر ممبران اور ای میل دعوتیں','Other members and email invitations')+'</h3>'+
-    legacy+'</section>';
+    kwfStaffTableV3()+'</section>'+kwfStaffPermissionPanelV3();
 };
 const kwfV3PriorDonationView=donationsView;
 donationsView=function(){
