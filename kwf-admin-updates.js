@@ -167,7 +167,9 @@ function kwfStaffMemberRows(){
   return (state.profiles||[]).map(function(p){
     var isOwner=p.role==='owner';
     var safeName=p.full_name?.trim() || kwfWord('بغیر نام ممبر','Unnamed member');
-    var buttons=kwfOwnerOnly()&&!isOwner?
+    var staffAccount=(state.kwfStaffAccounts||[]).some(a=>a.user_id===p.id);
+    var eligibleStaff=p.role==='staff'||staffAccount;
+    var buttons=kwfOwnerOnly()&&!isOwner&&p.role!=='admin'&&eligibleStaff?
       '<button type="button" class="btn tiny kwf-v4-delete" data-action="kwfDeleteMemberV4" data-id="'+html(p.id)+'" data-label="'+html(safeName)+'">'+
       kwfWord('ممبر حذف کریں','Delete member')+'</button>':'—';
     return '<tr><td><b>'+html(safeName)+'</b><div class="small muted">'+html((p.id||'').slice(0,8))+'…</div></td>'+
