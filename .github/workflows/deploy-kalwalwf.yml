@@ -20,6 +20,8 @@ on:
       - 'kwf-connection-v3.css'
       - 'kwf-dashboard-clean-v4.js'
       - 'kwf-dashboard-clean-v4.css'
+      - 'kwf-public-six-cards.js'
+      - 'kwf-public-six-cards.css'
       - 'kwf-supabase-entry.mjs'
       - 'smoke-test.cjs'
 
@@ -87,6 +89,8 @@ jobs:
           cat kwf-connection-v3.css >> _site/style.css
           cat kwf-dashboard-clean-v4.js >> _site/app.js
           cat kwf-dashboard-clean-v4.css >> _site/style.css
+          cat kwf-public-six-cards.js >> _site/app.js
+          cat kwf-public-six-cards.css >> _site/style.css
           # Both initial auth and old-password verification now load from Pages.
           python3 - <<'PY'
           import pathlib
