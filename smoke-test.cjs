@@ -143,4 +143,18 @@ vm.runInContext(fs.readFileSync('kwf-english-default-v6.js','utf8'),ctx,{timeout
 assert.equal(run("localStorage.getItem('kwfLanguage')"),'ur','English bootstrap does not overwrite user-selected Urdu');
 console.log('PASS: English-first visit, persistent Urdu preference, staff/family auto serials, clean login and Public Home');
 
+run("state.language='en';state.user={id:'10000000-0000-4000-8000-000000000001',email:'owner@example.com'};state.profile={role:'owner',full_name:'Owner'};state.view='account';render();");
+assert.match(app.innerHTML,/kwfBackupDownload/,'Owner Account contains encrypted backup button');
+assert.match(app.innerHTML,/kwfBackupPreview/,'Owner Account contains preview backup button');
+assert.match(app.innerHTML,/kwf-offline-backup-reader.html/,'Offline recovery reader is available');
+assert.match(app.innerHTML,/talhakalwal21\/kwf-welfare-web\/archive/,'Original source code ZIP backup is linked');
+assert.match(app.innerHTML,/kalwalwf\/kalwalwf.github.io\/archive/,'Active website source code ZIP is linked');
+assert.match(app.innerHTML,/Login passwords|login passwords/i,'Backup cautions do not promise recovery of account passwords');
+run("state.view='staff';render();");
+assert.match(app.innerHTML,/kwfBackupDownload/,'Owner Staff page includes backup and restore');
+run("state.profile={role:'donor',full_name:'Test donor'};state.view='account';render();");
+assert.doesNotMatch(app.innerHTML,/kwfBackupDownload|kwfBackupPreview|kwfBackupRestore/,'Donors cannot access Owner backups');
+console.log('PASS: KWF Owner-only encrypted backup/restore, source backups, offline reader and Auth warnings');
+
+
 
