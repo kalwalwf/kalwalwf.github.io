@@ -49,6 +49,23 @@ jobs:
           cat password-recovery.js >> _site/app.js
           cat password-recovery.css >> _site/style.css
           node --check _site/app.js
+          python3 - <<'PY'
+          import pathlib, re
+          js=pathlib.Path('_site/app.js').read_text()
+          source=js.split('// KWF 2026 public annual financial dashboard')[0]
+          for name in ('staffView','accountView','familiesView','expensesView','aidView','campaignsView','reportsView','dashboardView','shell','input','processForm','start','notify','getRows','staffTable','campaignsCards'):
+            p=re.search(r'(?:async\s+)?function\s+'+name+r'\s*\(',source)
+            if not p: continue
+            nextfunc=re.search(r'\n(?:async\s+)?function\s+\w+\s*\(',source[p.end():])
+            end=p.end()+nextfunc.start() if nextfunc else len(source)
+            print('DIAGNOSTIC-BEGIN',name, 'bytes',end-p.start())
+            print(source[p.start():min(end,p.start()+7500)])
+            print('DIAGNOSTIC-END',name)
+          css=pathlib.Path('_site/style.css').read_text()
+          for sel in ('.authcard','.account','.stat','.dataTable','.panel','.btn','.authlinks','.formgrid'):
+            for x in list(re.finditer(re.escape(sel),css))[:12]:
+              print('DIAGNOSTIC-CSS',sel,css[max(0,x.start()-90):x.start()+250])
+          PY
           # Use GitHub public variables if configured. Otherwise, copy the
           # publishable-key-only config already live on the existing site.
           if [[ -n "$KWF_SUPABASE_URL" && -n "$KWF_SUPABASE_PUBLIC_KEY" ]]; then
