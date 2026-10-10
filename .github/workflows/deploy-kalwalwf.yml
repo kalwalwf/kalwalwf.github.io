@@ -142,9 +142,10 @@ jobs:
           assert 'window.KWF_CONFIG' in config
           assert not any(secret in config.lower() for secret in ('service_role','sb_secret_'))
           html=p.read_text(encoding='utf-8')
-          needle='<script src="./config.js"></script>'
-          assert html.count(needle)==1, 'Index expected a single public config script'
-          html=html.replace(needle,'<script>'+config.replace('</script','<\\/script')+'</script>')
+          import re
+          pattern=r'<script src="\\./config\\.js(?:\\?v=[^"]+)?"></script>'
+          html,count=re.subn(pattern,lambda _m:'<script>'+config.replace('</script','<\\/script')+'</script>',html)
+          assert count==1, 'Index expected exactly one cache-busted config script'
           placeholder='<div id="app" aria-live="polite"></div>'
           assert placeholder in html
           html=html.replace(placeholder,'<div id="app" aria-live="polite"><div style="margin:22vh auto;max-width:420px;padding:24px;text-align:center;font:16px system-ui,sans-serif;color:#19523b">KWF Welfare Portal — Connecting…</div></div>')
