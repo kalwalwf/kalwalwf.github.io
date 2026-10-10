@@ -86,8 +86,8 @@ run("state.view='families';state.aid=[{beneficiary_id:'20000000-0000-4000-8000-0
 assert.match(app.innerHTML,/kwf-family-helped/,'families with distributed non-void aid are marked green');
 console.log('PASS: KWF safe slow-network loading, private staff details, role permissions, donor totals, search and aided family highlighting');
 run("state.view='staff';state.profiles.push({id:'55555555-5555-4555-8555-555555555555',full_name:'',role:'donor'});render();");
-assert.match(app.innerHTML,/kwfDeleteMemberV4/,'owner has safe delete button for test staff and donors');
-assert.match(app.innerHTML,/data-id="55555555-5555-4555-8555-555555555555"/,'donor without a name can be selected for deletion');
+assert.match(app.innerHTML,/kwfDeleteMemberV4/,'owner may safely delete staff');
+assert.match(app.innerHTML,/55555555/,'donor remains listed for management but has no deletion');
 assert.match(app.innerHTML,/kwfEditStaffV3/,'owner retains staff editing');
 assert.match(app.innerHTML,/kwfPermissionUpdateV3/,'staff permissions remain available');
 assert.match(app.innerHTML,/kwfCreateStaffV3/,'staff create form remains available within Add Staff');
@@ -96,7 +96,7 @@ assert.match(app.innerHTML,/Registered members/,'single consolidated registered 
 assert.equal((app.innerHTML.match(/Registered members/g)||[]).length,1,'registered members section appears only once');
 assert.doesNotMatch(app.innerHTML,/Manage donor \/ test accounts|Staff members|Staff invitations/i,'duplicate lists and invitation section are removed');
 assert.doesNotMatch(app.innerHTML,/data-action="kwfDeleteMemberV4" data-id="10000000-0000-4000-8000-000000000001"/,'Owner account cannot be deleted');
-assert.match(app.innerHTML,/data-action="kwfDeleteMemberV4" data-id="55555555-5555-4555-8555-555555555555"/,'unnamed extra profile can be deleted from registered members');
+assert.doesNotMatch(app.innerHTML,/data-action="kwfDeleteMemberV4" data-id="55555555-5555-4555-8555-555555555555"/,'donor deletion is prohibited for Owner and Admin');
 run("state.profile={full_name:'Test Donor',role:'donor'};state.user={id:'55555555-5555-4555-8555-555555555555',email:'donor@example.com'};state.view='dashboard';render();");
 assert.match(app.innerHTML,/How to submit a donation/,'donor dashboard has donation instructions');
 assert.match(app.innerHTML,/receipt/i,'donor instructions explain receipt submission');
@@ -104,7 +104,12 @@ assert.match(app.innerHTML,/data-view="donations"/,'donor can open donation form
 run("state.view='donations';render();");
 assert.match(app.innerHTML,/How to submit a donation/,'donor donation history has guidance');
 assert.match(app.innerHTML,/data-form="donation"/,'donor receipt form still available');
-console.log('PASS: KWF v4 clean staff panel, safe deletion controls, hidden legacy invites, donor donation instructions');
+assert.match(app.innerHTML,/data-kwf-presence-user="44444444-4444-4444-8444-444444444444"/,'staff presence indicator is shown in Registered members');
+assert.match(app.innerHTML,/Offline/,'staff without a recent heartbeat shows Offline');
+run("state.kwfOnlineStaff=[{user_id:'44444444-4444-4444-8444-444444444444',last_seen_at:new Date().toISOString()}];render();");
+assert.match(app.innerHTML,/kwf-presence kwf-online/,'staff with a valid heartbeat shows Online');
+assert.match(app.innerHTML,/Online staff/,'Owner dashboard counts online staff');
+console.log('PASS: KWF Staff Online/Offline, Donor deletion prohibited and compact member management');
 run("state.user=null;state.profile=null;state.publicPage='home';state.kwfPhoneRecovery=false;state.dashboard={year:2026,approved:1200,spent:200,balance:1000,donor_count:3,beneficiary_count:5,aid_count:7};render();");
 assert.match(app.innerHTML,/kwf-six-public-stats/,'public dashboard includes six-statistic grid');
 assert.equal((app.innerHTML.match(/<div class="stat\b/g)||[]).length,6,'public dashboard has exactly six cards');
