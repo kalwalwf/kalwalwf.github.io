@@ -69,7 +69,9 @@ function kwfV4StaffSummary(){
   return '<div class="kwf-v4-inline-stats">'+
     '<span><strong>'+count+'</strong> '+kwfV4Word('فعال Staff','Active staff')+'</span>'+
     '<span><strong>'+Number(state.kwfDonorRegistrationStats?.registered_donors||donorCount)+'</strong> '+
-    kwfV4Word('رجسٹرڈ Donors','Registered donors')+'</span></div>';
+    kwfV4Word('رجسٹرڈ Donors','Registered donors')+'</span>'+
+    '<span><strong class="kwf-online-count" data-kwf-online-count>'+kwfPresenceCount()+'</strong> '+
+    kwfV4Word('آن لائن Staff','Online staff')+'</span></div>';
 }
 const kwfV4PreviousStaffView=staffView;
 staffView=function(){
