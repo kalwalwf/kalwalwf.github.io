@@ -104,6 +104,7 @@ assert.match(app.innerHTML,/data-view="donations"/,'donor can open donation form
 run("state.view='donations';render();");
 assert.match(app.innerHTML,/How to submit a donation/,'donor donation history has guidance');
 assert.match(app.innerHTML,/data-form="donation"/,'donor receipt form still available');
+run("state.profile={full_name:'Test Owner',role:'owner'};state.user={id:'10000000-0000-4000-8000-000000000001',email:'test@example.com'};state.view='staff';state.kwfOnlineStaff=[];render();");
 assert.match(app.innerHTML,/data-kwf-presence-user="44444444-4444-4444-8444-444444444444"/,'staff presence indicator is shown in Registered members');
 assert.match(app.innerHTML,/Offline/,'staff without a recent heartbeat shows Offline');
 run("state.kwfOnlineStaff=[{user_id:'44444444-4444-4444-8444-444444444444',last_seen_at:new Date().toISOString()}];render();");
