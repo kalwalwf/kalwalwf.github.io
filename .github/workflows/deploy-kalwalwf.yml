@@ -28,6 +28,10 @@ on:
       - 'kwf-english-default-v6.js'
       - 'kwf-family-serial-v6.js'
       - 'kwf-serial-language-v6.css'
+      - 'kwf-backup-lib.mjs'
+      - 'kwf-backup-v1.js'
+      - 'kwf-backup-v1.css'
+      - 'kwf-offline-backup-reader.html'
       - 'kwf-supabase-entry.mjs'
       - 'smoke-test.cjs'
 
@@ -68,9 +72,12 @@ jobs:
           test -f _site/app.js
           # Keep the Supabase client on the same GitHub Pages origin to avoid a
           # third-party CDN timeout showing a false "not connected" message.
-          npm install --no-save --no-audit --no-fund @supabase/supabase-js@2.57.0 esbuild@0.25.12
+          npm install --no-save --no-audit --no-fund @supabase/supabase-js@2.57.0 esbuild@0.25.12 fflate@0.8.2
           ./node_modules/.bin/esbuild kwf-supabase-entry.mjs --bundle --format=esm --platform=browser --target=es2020 --minify --outfile=_site/supabase-sdk.js
           test -s _site/supabase-sdk.js
+          ./node_modules/.bin/esbuild kwf-backup-lib.mjs --bundle --format=esm --platform=browser --target=es2020 --minify --outfile=_site/kwf-backup-lib.js
+          test -s _site/kwf-backup-lib.js
+          cp kwf-offline-backup-reader.html _site/kwf-offline-backup-reader.html
           python3 - <<'PY'
           import pathlib
           p=pathlib.Path('_site/app.js')
@@ -104,6 +111,8 @@ jobs:
           cat kwf-responsive-v5.css >> _site/style.css
           cat kwf-family-serial-v6.js >> _site/app.js
           cat kwf-serial-language-v6.css >> _site/style.css
+          cat kwf-backup-v1.js >> _site/app.js
+          cat kwf-backup-v1.css >> _site/style.css
           # Both initial auth and old-password verification now load from Pages.
           python3 - <<'PY'
           import pathlib
@@ -116,7 +125,11 @@ jobs:
           PY
           node --check _site/app.js
           node --check _site/supabase-sdk.js
+          node --check _site/kwf-backup-lib.js
           node smoke-test.cjs _site/app.js
+          test -s _site/kwf-offline-backup-reader.html
+          grep -q 'KWF_AES256_GCM_PBKDF2' _site/app.js
+          grep -q 'Backup & Restore' _site/app.js
           grep -q 'kwfStaffInvite' _site/app.js
           grep -q 'kwfResendVerification' _site/app.js
           grep -q 'kwf-modal' _site/style.css
