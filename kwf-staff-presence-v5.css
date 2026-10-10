@@ -1,0 +1,9 @@
+/* Owner-only live staff presence badges */
+.kwf-presence{display:inline-flex;align-items:center;gap:6px;font-weight:750;
+ font-size:12px;line-height:1.2;white-space:nowrap;padding:6px 9px;border-radius:999px}
+.kwf-presence-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+.kwf-presence.kwf-online{background:#e5f6eb;color:#166539;border:1px solid #c5e6d0}
+.kwf-presence.kwf-online .kwf-presence-dot{background:#19a454;box-shadow:0 0 0 3px #c8efda}
+.kwf-presence.kwf-offline{background:#eef0f1;color:#58636c;border:1px solid #dce1e4}
+.kwf-presence.kwf-offline .kwf-presence-dot{background:#8b9399}
+.kwf-online-count{font-weight:800;color:#197541}
