@@ -70,6 +70,18 @@ jobs:
           grep -q 'kwfStaffInvite' _site/app.js
           grep -q 'kwfResendVerification' _site/app.js
           grep -q 'kwf-modal' _site/style.css
+          # Use unique asset URLs on each deployment so old CSS/JS cannot
+          # make login buttons invisible or hide the updated admin controls.
+          python3 - <<'PY'
+          import os, pathlib
+          p=pathlib.Path('_site/index.html')
+          markup=p.read_text(encoding='utf-8')
+          version=os.environ.get('GITHUB_SHA','')[:12]
+          for name in ('style.css','app.js','config.js'):
+            markup=markup.replace('./'+name+'"','./'+name+'?v='+version+'"')
+          p.write_text(markup,encoding='utf-8')
+          assert '?v='+version in markup
+          PY
           # Use GitHub public variables if configured. Otherwise, copy the
           # publishable-key-only config already live on the existing site.
           if [[ -n "$KWF_SUPABASE_URL" && -n "$KWF_SUPABASE_PUBLIC_KEY" ]]; then
