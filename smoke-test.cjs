@@ -101,4 +101,19 @@ run("state.view='donations';render();");
 assert.match(app.innerHTML,/How to submit a donation/,'donor donation history has guidance');
 assert.match(app.innerHTML,/data-form="donation"/,'donor receipt form still available');
 console.log('PASS: KWF v4 clean staff panel, safe deletion controls, hidden legacy invites, donor donation instructions');
+run("state.user=null;state.profile=null;state.publicPage='home';state.kwfPhoneRecovery=false;state.dashboard={year:2026,approved:1200,spent:200,balance:1000,donor_count:3,beneficiary_count:5,aid_count:7};render();");
+assert.match(app.innerHTML,/kwf-six-public-stats/,'public dashboard includes six-statistic grid');
+assert.equal((app.innerHTML.match(/<div class="stat\b/g)||[]).length,6,'public dashboard has exactly six cards');
+assert.match(app.innerHTML,/Total donations this year/,'public shows annual donations');
+assert.match(app.innerHTML,/Total expenses this year/,'public shows annual expenses');
+assert.match(app.innerHTML,/Balance this year/,'public shows annual balance');
+assert.match(app.innerHTML,/Donors/,'public shows yearly verified donor count');
+assert.match(app.innerHTML,/Beneficiary families/,'public shows active family count');
+assert.match(app.innerHTML,/Aid distributed/,'public shows delivered aid record count');
+for (const number of ['3','5','7']) {
+  assert.match(app.innerHTML,new RegExp('<div class="num">'+number+'</div>'),'public shows live summary '+number);
+}
+assert.doesNotMatch(app.innerHTML,/Test Father|1234567890123/,'private staff details never appear on public homepage');
+console.log('PASS: Public URL shows six data-backed KWF finance, donor, family and aid cards without authentication');
+
 
