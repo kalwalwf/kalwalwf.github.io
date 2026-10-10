@@ -234,6 +234,24 @@ staffView = function(){
     '</section>'+kwfActivityPanel();
 };
 
+// Supabase invitation links sign the recipient in without requiring a password.
+// Allow the invited staff member to set one securely before the first logout.
+const kwfOldAccountView = accountView;
+accountView = function(){
+  var markup=kwfOldAccountView();
+  if (kwfUserRole()!=='staff') return markup;
+  var passwordSection='<section class="panel kwf-staff-password-panel"><h3>'+
+    kwfWord('اپنا لاگ اِن پاس ورڈ بنائیں','Set your login password')+'</h3>'+
+    '<p class="small muted">'+kwfWord('دعوتی لنک سے لاگ اِن ہونے کے بعد اپنا مستقل پاس ورڈ مقرر کریں، تاکہ آئندہ Login کر سکیں۔',
+      'After opening your invitation link, set a password so you can sign in again later.')+'</p>'+
+    '<form data-form="kwfStaffSetPassword" class="kwf-staff-password-form">'+
+    kwfInputField('new_password',kwfWord('نیا پاس ورڈ','New password'),'','password',true)+
+    kwfInputField('confirm_password',kwfWord('پاس ورڈ دوبارہ درج کریں','Confirm password'),'','password',true)+
+    '<button type="submit" class="btn">'+kwfWord('پاس ورڈ محفوظ کریں','Save password')+'</button>'+
+    '</form></section>';
+  return markup+passwordSection;
+};
+
 const kwfOldShell = shell;
 shell = function(){
   var markup=kwfOldShell();
@@ -280,12 +298,25 @@ refresh = async function(silent){
 const kwfOldProcessForm = processForm;
 processForm = async function(form){
   var action=form.dataset.form;
-  if (action!=='kwfStaffInvite' && action!=='kwfSaveEdit') return kwfOldProcessForm(form);
+  if (action!=='kwfStaffInvite' && action!=='kwfSaveEdit' && action!=='kwfStaffSetPassword') return kwfOldProcessForm(form);
   if (state.kwfStaffBusy) return;
   state.kwfStaffBusy=true;
   var button=form.querySelector('button[type="submit"]');
   if (button) button.disabled=true;
   try{
+    if (action==='kwfStaffSetPassword'){
+      if(kwfUserRole()!=='staff') throw new Error('Only signed-in staff can use this form');
+      var values=new FormData(form);
+      var password=String(values.get('new_password')||'');
+      var confirmPassword=String(values.get('confirm_password')||'');
+      if(password.length<8) throw new Error(kwfWord('پاس ورڈ کم از کم 8 حروف کا ہونا چاہیے۔','Use at least 8 characters.'));
+      if(password!==confirmPassword) throw new Error(kwfWord('دونوں پاس ورڈ ایک جیسے نہیں۔','Passwords do not match.'));
+      var saved=await state.client.auth.updateUser({password:password});
+      if(saved.error) throw saved.error;
+      form.reset();
+      notify(kwfWord('پاس ورڈ محفوظ ہوگیا۔ آئندہ اسی پاس ورڈ سے Login کریں۔','Password saved. Use it to sign in next time.'));
+      return;
+    }
     if (action==='kwfStaffInvite'){
       if (!kwfOwnerOnly()) throw new Error('Owner only');
       var email=String(new FormData(form).get('email')||'').trim();
