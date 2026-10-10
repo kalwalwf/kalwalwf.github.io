@@ -3,55 +3,60 @@
 state.kwfDeleteBusy=false;
 const kwfV4Word=(ur,en)=>state.language==='ur'?ur:en;
 
-function kwfV4StaffRows(){
-  const members=state.kwfStaffAccounts||[];
+function kwfV4RegisteredMembers(){
+  // A single, Owner-only directory of all registered profiles.
+  // Usernames are displayed only when staff has a username account.
+  // No promotion, email-invitation or duplicate member panels.
+  const accounts=new Map((state.kwfStaffAccounts||[]).map(a=>[a.user_id,a]));
+  const members=state.profiles||[];
   if(!members.length){
-    return '<div class="kwf-v4-empty">'+kwfV4Word('ابھی کوئی Username Staff اکاؤنٹ نہیں۔','No username-based staff accounts yet.')+'</div>';
+    return '<div class="kwf-v4-empty">'+kwfV4Word('ابھی کوئی ممبر رجسٹرڈ نہیں۔','No registered members yet.')+'</div>';
   }
   const rows=members.map(member=>{
-    const person=(state.profiles||[]).find(p=>p.id===member.user_id);
-    const enabled=member.is_active!==false;
-    const displayName=person?.full_name||member.username;
-    const buttons=[
-      enabled?'<button type="button" class="btn ghost tiny" data-action="kwfEditStaffV3" data-username="'+html(member.username)+'">'+kwfV4Word('ترمیم','Edit')+'</button>':'',
-      enabled?'<button type="button" class="btn ghost tiny" data-action="kwfResetStaffV2" data-username="'+html(member.username)+'">'+kwfV4Word('پاس ورڈ','Password')+'</button>':'',
-      enabled?'<button type="button" class="btn ghost tiny" data-action="kwfDisableStaffV3" data-username="'+html(member.username)+'">'+kwfV4Word('بند کریں','Disable')+'</button>':
-        '<button type="button" class="btn ghost tiny" data-action="kwfEnableStaffV3" data-username="'+html(member.username)+'">'+kwfV4Word('فعال کریں','Enable')+'</button>',
-      '<button type="button" class="btn tiny kwf-v4-delete" data-action="kwfDeleteMemberV4" data-id="'+html(member.user_id)+'" data-label="'+html(displayName)+'">'+
-      kwfV4Word('حذف','Delete')+'</button>'
-    ].filter(Boolean).join('');
-    return '<tr><td><strong>'+html(displayName)+'</strong><div class="small muted">@'+html(member.username)+'</div></td>'+
-      '<td>'+html(member.father_name||'—')+'</td><td>'+html(member.mobile||'—')+'</td>'+
-      '<td><span class="badge '+(enabled?'':'kwf-v4-muted-badge')+'">'+(enabled?kwfV4Word('فعال','Active'):kwfV4Word('بند','Disabled'))+'</span></td>'+
-      '<td><div class="kwf-v4-actions">'+buttons+'</div></td></tr>';
+    const account=accounts.get(member.id);
+    const role=member.role||'donor';
+    const isOwner=role==='owner';
+    const isAdmin=role==='admin';
+    const isStaff=role==='staff'||!!account;
+    const isEnabled=account?.is_active!==false;
+    const displayName=member.full_name?.trim()||
+      (account?.username||kwfV4Word('بغیر نام ممبر','Unnamed member'));
+    const phone=member.phone||account?.mobile||'—';
+    const roleBadge=isStaff&&account&&!isEnabled?
+      kwfV4Word('بند Staff','Disabled staff'):role;
+    const controls=[];
+    if(!isOwner&&!isAdmin){
+      if(account){
+        if(isEnabled){
+          controls.push('<button type="button" class="btn ghost tiny" data-action="kwfEditStaffV3" data-username="'+
+            html(account.username)+'">'+kwfV4Word('ترمیم','Edit')+'</button>');
+          controls.push('<button type="button" class="btn ghost tiny" data-action="kwfResetStaffV2" data-username="'+
+            html(account.username)+'">'+kwfV4Word('پاس ورڈ','Password')+'</button>');
+          controls.push('<button type="button" class="btn ghost tiny" data-action="kwfDisableStaffV3" data-username="'+
+            html(account.username)+'">'+kwfV4Word('بند کریں','Disable')+'</button>');
+        }else{
+          controls.push('<button type="button" class="btn ghost tiny" data-action="kwfEnableStaffV3" data-username="'+
+            html(account.username)+'">'+kwfV4Word('فعال کریں','Enable')+'</button>');
+        }
+      }
+      // Permanent deletion always runs server checks for donation, aid,
+      // financial, ownership and audit dependencies before confirming.
+      controls.push('<button type="button" class="btn tiny kwf-v4-delete" data-action="kwfDeleteMemberV4" data-id="'+
+        html(member.id)+'" data-label="'+html(displayName)+'">'+kwfV4Word('ممبر حذف کریں','Delete member')+'</button>');
+    }
+    const subLabel=account?'@'+html(account.username):html((member.id||'').slice(0,8))+'…';
+    return '<tr class="'+(account&&!isEnabled?'kwf-inactive-staff':'')+'">'+
+      '<td><strong>'+html(displayName)+'</strong><div class="small muted">'+subLabel+'</div></td>'+
+      '<td>'+html(phone)+'</td>'+
+      '<td><span class="badge '+(account&&!isEnabled?'kwf-v4-muted-badge':'')+'">'+html(roleBadge)+'</span></td>'+
+      '<td><div class="kwf-v4-actions">'+(controls.join('')||'—')+'</div></td></tr>';
   });
   return table([
-    kwfV4Word('Staff','Staff'),
-    kwfV4Word('والد کا نام','Father name'),
-    kwfV4Word('موبائل','Mobile'),
-    kwfV4Word('حیثیت','Status'),
+    kwfV4Word('نام','Name'),
+    kwfV4Word('فون','Phone'),
+    kwfV4Word('رول','Role'),
     kwfV4Word('انتظام','Manage')
   ],rows);
-}
-function kwfV4TestMembers(){
-  // Username staff are managed above, so avoid repeating them below.
-  const staffIds=new Set((state.kwfStaffAccounts||[]).map(x=>x.user_id));
-  const members=(state.profiles||[])
-    .filter(p=>p.role!=='owner'&&!staffIds.has(p.id));
-  if(!members.length){
-    return '<p class="small muted">'+kwfV4Word('کوئی اضافی ممبر نہیں۔','No other registered accounts.')+'</p>';
-  }
-  const rows=members.map(member=>{
-    const title=member.full_name?.trim()||kwfV4Word('بغیر نام ممبر','Unnamed member');
-    const safeId=member.id.slice(0,8)+'…';
-    return '<tr><td><b>'+html(title)+'</b><div class="small muted">'+html(safeId)+'</div></td>'+
-      '<td><span class="badge">'+html(member.role)+'</span></td>'+
-      '<td><div class="kwf-v4-actions">'+
-      '<button type="button" class="btn tiny kwf-v4-delete" data-action="kwfDeleteMemberV4" data-id="'+html(member.id)+'" data-label="'+html(title)+'">'+
-      kwfV4Word('اکاؤنٹ حذف کریں','Delete account')+'</button>'+
-      '</div></td></tr>';
-  });
-  return table([kwfV4Word('نام','Name'),kwfV4Word('رول','Role'),kwfV4Word('انتظام','Manage')],rows);
 }
 function kwfV4StaffSummary(){
   const count=(state.kwfStaffAccounts||[]).filter(x=>x.is_active!==false).length;
@@ -83,29 +88,21 @@ staffView=function(){
     '<header class="kwf-v4-heading"><div><h2 class="sectionTitle">'+kwfV4Word('Staff Management','Staff management')+'</h2>'+
       '<p class="muted small">'+kwfV4Word('ممبرز، رسائی اور محفوظ اکاؤنٹ حذف کرنا','Manage members, access and safe account deletion')+'</p></div>'+
       kwfV4StaffSummary()+'</header>'+
-    '<section class="panel kwf-v4-main-list"><div class="kwf-v4-panel-head"><h3>'+kwfV4Word('Staff ممبران','Staff members')+'</h3>'+
-      '<span class="muted small">'+kwfV4Word('تبدیلیاں صرف Owner کر سکتا ہے','Owner controlled')+'</span></div>'+
-      kwfV4StaffRows()+'</section>'+
+    '<section class="panel kwf-v4-main-list"><div class="kwf-v4-panel-head"><h3>'+kwfV4Word('رجسٹرڈ ممبران','Registered members')+'</h3>'+
+      '<span class="muted small">'+kwfV4Word('Owner صرف غیر ضروری ممبر حذف کر سکتا ہے؛ مالی ریکارڈ محفوظ رہیں گے','Only Owner can delete unlinked members; financial records remain protected')+'</span></div>'+
+      kwfV4RegisteredMembers()+'</section>'+
     (editing?editPanel:
       '<details class="kwf-v4-details kwf-v4-add-panel"><summary><span class="kwf-v4-summary-icon">+</span> '+
         kwfV4Word('نیا Staff شامل کریں','Add staff member')+'</summary>'+addPanel+'</details>')+
     reset+
     '<details class="kwf-v4-details kwf-v4-permission-details"><summary>🔐 '+
       kwfV4Word('Staff کو مالی اجازت دیں','Staff permissions')+'</summary>'+permissions+'</details>'+
-    '<details class="kwf-v4-details kwf-v4-member-details"><summary>♙ '+
-      kwfV4Word('Donor / Test Accounts حذف کریں','Manage donor / test accounts')+'</summary>'+
-      '<div class="panel"><p class="small muted">'+kwfV4Word(
-        'صرف وہ اکاؤنٹس مستقل حذف ہو سکتے ہیں جن کا Donation، Aid یا مالی ریکارڈ نہیں۔ پہلے مالی ریکارڈ چیک ہوگا۔',
-        'Only accounts without linked financial or aid records can be permanently deleted. The server checks first.')+
-      '</p>'+kwfV4TestMembers()+'</div></details>'+
+
     '<details class="kwf-v4-details kwf-v4-audit"><summary>▤ '+
       kwfV4Word('تبدیلیوں کی History / Audit Log','Activity & audit log')+'</summary>'+
       kwfActivityPanel()+'</details>'+
     '</div>';
 };
-// The old "Other members and email invitations" form/section is intentionally
-// NOT included; email invitation records remain in Supabase for history.
-
 function kwfV4DonorGuide(compact=false){
   const title=kwfV4Word('عطیہ کیسے جمع کروائیں؟','How to submit a donation');
   const help=kwfV4Word('یہ چار مراحل مکمل کریں۔ رسید اپ لوڈ کرنا خودکار منظوری نہیں ہے۔',
