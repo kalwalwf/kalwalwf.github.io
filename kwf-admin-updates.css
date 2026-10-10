@@ -1,0 +1,37 @@
+/* Contrast corrections: white-on-white in account, cards and top navigation. */
+.main .content,.main .content .panel,.main .content .panel p,.main .content .dataTable td{color:#193c2d}
+.main .content .panel a{color:#116b4b}
+.main .content .panel .muted,.main .content .panel .small.muted{color:#526d5d}
+.main .content .panel .badge{color:#146c47;background:#e5f7ee}
+.main .content .panel .btn:not(.ghost):not(.warn):not(.kwf-edit-button){color:#fff}
+.main .content .panel .btn.ghost{background:#fff;color:#116e4a;border-color:#a9ceba}
+.main .content .panel .btn.danger{background:#b93132!important;color:#fff!important;border-color:#b93132!important}
+.main .content .panel h2,.main .content .panel h3,.main .content .panel h4{color:#173b2b}
+.main .content .panel input,.main .content .panel select,.main .content .panel textarea{color:#193c2d;background:#fff}
+.public-buttons .btn.ghost{background:transparent!important;color:#fff!important;border:1px solid #b8e1cc!important}
+.public-buttons .btn.ghost:hover{background:#1e694d!important}
+.public-top .btn:not(.ghost){background:#177953!important;color:#fff!important;border-color:#79b79e!important}
+.public-home .public-content .btn.ghost{background:#fff;color:#176c4d;border-color:#b9d2c6}
+.kwf-edit-button{background:#e9f6ee!important;color:#126544!important;border:1px solid #aad8bf!important;min-height:32px}
+.kwf-edit-button:hover{background:#d5eddf!important}
+.kwf-row-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.kwf-alert-button{border:1px solid #ecd5a5;background:#fff9e8;color:#7e4d10!important;font-weight:800}
+.kwf-alert-button:hover{background:#fbedc8}
+.kwf-invite-form{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin:18px 0}
+.kwf-invite-form .kwf-field{min-width:min(100%,280px);flex:1}
+.kwf-invite-form .kwf-field input{min-height:45px}
+.kwf-activity-panel{margin-top:22px}
+.kwf-unread-row td{background:#fff9e6!important}
+.kwf-long{min-width:210px;white-space:normal;max-width:420px;word-break:break-word}
+.kwf-modal-backdrop{position:fixed;inset:0;background:#092a1ed6;z-index:9999;display:flex;align-items:center;justify-content:center;padding:17px;overflow-y:auto}
+.kwf-modal{background:#fff;color:#193c2d;border-radius:18px;padding:24px;width:min(100%,750px);max-height:95vh;overflow-y:auto;box-shadow:0 25px 70px #0006;direction:inherit}
+.kwf-modal h2{font-size:20px;color:#123a27;margin:0}
+.kwf-modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.kwf-edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.kwf-field{display:flex;flex-direction:column;gap:7px;font-size:13px;font-weight:700;color:#365643}
+.kwf-field input,.kwf-field select,.kwf-field textarea{border:1px solid #b7d1c1;border-radius:9px;background:#fff;color:#193c2d;min-height:43px;padding:10px;font:inherit;width:100%}
+.kwf-field input:focus,.kwf-field select:focus,.kwf-field textarea:focus{outline:2px solid #1d875b;outline-offset:1px}
+.kwf-modal form>.kwf-field{margin-top:15px}
+.kwf-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;flex-wrap:wrap}
+.kwf-modal .btn.ghost{color:#196548;background:#fff}
+@media(max-width:640px){.kwf-edit-grid{grid-template-columns:1fr}.kwf-modal{padding:16px}.kwf-invite-form{display:block}.kwf-invite-form .btn{margin-top:12px;width:100%}.kwf-modal-actions .btn{flex:1}}
