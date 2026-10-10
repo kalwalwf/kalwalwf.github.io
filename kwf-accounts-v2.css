@@ -1,0 +1,22 @@
+
+/* KWF Account v2: readable login, staff credential forms and phone OTP. */
+.kwf-account-card{max-width:520px;color:#173b2b}
+.kwf-account-card h3{font-size:20px;color:#133b2a;margin:6px 0 10px}
+.kwf-account-description{line-height:1.7;margin:0 0 14px}
+.kwf-account-card form,.kwf-change-password form,.kwf-create-staff-v2 form,.kwf-reset-staff-v2 form{display:grid;gap:13px;max-width:540px}
+.kwf-account-field{display:flex;flex-direction:column;gap:7px;font-size:13px;font-weight:700;color:#325a46}
+.kwf-account-field input{background:#fff;color:#173b2b;border:1px solid #b6d2c1;border-radius:9px;padding:11px 12px;min-height:44px;width:100%;font-size:14px;direction:inherit}
+.kwf-account-field input[type=password],.kwf-account-field input[type=email],.kwf-account-field input[name=identifier],.kwf-account-field input[name=username],.kwf-account-field input[type=tel]{direction:ltr;text-align:left}
+.kwf-account-field input:focus{outline:2px solid #21926a;outline-offset:2px}
+.kwf-account-submit{width:100%}
+.kwf-account-methods,.kwf-account-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:14px 0}
+.kwf-account-methods .btn{flex:1}
+.kwf-account-actions .btn{flex:1 1 auto}
+.kwf-account-card .btn.ghost{color:#146848;background:#f4fbf7;border-color:#b5d7c4}
+.kwf-phone-provider-help{border:1px solid #c7dfd0;background:#f3faf6;border-radius:9px;padding:11px;line-height:1.75}
+.kwf-create-staff-v2{border-inline-start:5px solid #208459!important}
+.kwf-create-staff-v2 h3,.kwf-change-password h3{margin-bottom:12px!important}
+.kwf-create-staff-v2 .muted,.kwf-change-password .muted{line-height:1.7}
+.kwf-reset-staff-v2{border-inline-start:5px solid #9b6824!important}
+.kwf-account-username{display:inline-block;border-radius:6px;background:#ebf5ee;padding:6px 9px;color:#176a48;font-weight:700;direction:ltr}
+@media(max-width:650px){.kwf-account-actions{display:grid;grid-template-columns:1fr}.kwf-account-actions .btn{width:100%}}
