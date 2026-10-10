@@ -65,12 +65,11 @@ authView=function(){
       kwfAccountField('password',kwfAccountI18n('پاس ورڈ','Password'),'password',true,'current-password')+
       '<button class="btn kwf-account-submit" type="submit">'+kwfAccountI18n('لاگ اِن','Sign in')+'</button></form>'+
       '<div class="kwf-account-actions">'+
-      '<button class="btn tiny ghost" data-action="kwfForgot" type="button">'+kwfAccountI18n('ای میل سے Password Reset','Reset with email')+'</button>'+
-      '<button class="btn tiny ghost" data-action="kwfPhoneForgot" type="button">'+kwfAccountI18n('موبائل سے Reset (OTP)','Reset with mobile OTP')+'</button>'+
+      '<button class="btn tiny ghost kwf-password-reset-btn" data-action="kwfForgot" type="button">'+kwfAccountI18n('پاس ورڈ ری سیٹ','Password Reset')+'</button>'+
       '<button class="btn tiny ghost" data-action="kwfResendVerification" type="button">'+kwfAccountI18n('Verification Email دوبارہ بھیجیں','Resend verification email')+'</button>'+
       '</div><div class="kwf-account-actions">'+
       '<button class="btn tiny ghost" data-action="visitorRegister" type="button">'+kwfAccountI18n('نیا اکاؤنٹ بنائیں','Create account')+'</button>'+
-      '<button class="btn tiny ghost" data-action="publicHome" type="button">'+kwfAccountI18n('ہوم پیج','Public home')+'</button>'+
+      '<button class="btn kwf-public-home-btn" data-action="publicHome" type="button">'+kwfAccountI18n('عوامی ہوم پیج','Public Home')+'</button>'+
       '</div>'+
       '<p class="small muted">'+kwfAccountI18n('Staff Username کا پاس ورڈ بھول جائیں تو Owner نیا پاس ورڈ مقرر کرے گا۔',
        'For staff usernames without email, ask the Owner to reset your password.')+'</p>');
