@@ -1,0 +1,20 @@
+/* KWF serial numbers and professional login/Public Home link. */
+.kwf-serial-heading,.kwf-serial-cell{width:88px;min-width:65px;text-align:center;white-space:nowrap!important;font-variant-numeric:tabular-nums}
+.kwf-serial-cell{font-size:13px!important;font-weight:800;color:#216145!important}
+.authcard .kwf-public-home-btn,.kwf-account-card .kwf-public-home-btn{
+ display:inline-flex!important;justify-content:center;align-items:center;
+ padding:11px 18px!important;border-radius:11px!important;
+ background:#125b40!important;border:1px solid #125b40!important;color:#fff!important;
+ font-weight:800!important;font-size:14px!important;
+ box-shadow:0 4px 12px rgba(9,81,49,.14);
+}
+.authcard .kwf-public-home-btn:hover,.kwf-account-card .kwf-public-home-btn:hover{
+ background:#0b4833!important;color:#fff!important;border-color:#0b4833!important;
+}
+.authcard .kwf-public-home-btn:focus-visible{outline:3px solid #92d3ab;outline-offset:3px}
+.kwf-account-actions .kwf-public-home-btn{flex:1 1 140px}
+.authcard .kwf-password-reset-btn{font-size:13px!important;font-weight:700!important}
+@media(max-width:700px){
+ .kwf-serial-heading,.kwf-serial-cell{min-width:65px!important;width:65px!important}
+ .kwf-account-actions .kwf-public-home-btn{width:100%}
+}
