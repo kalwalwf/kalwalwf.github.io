@@ -24,8 +24,11 @@ function kwfV4RegisteredMembers(){
     const phone=member.phone||account?.mobile||'—';
     const roleBadge=isStaff&&account&&!isEnabled?
       kwfV4Word('بند Staff','Disabled staff'):role;
+    const presence=(role==='staff'&&isEnabled)?kwfStaffPresenceTag(member.id):'—';
     const controls=[];
-    if(!isOwner&&!isAdmin){
+    // Donor accounts are permanent and are NEVER delete-enabled, even for Owner.
+    // Disabled username staff still count as staff accounts.
+    if((role==='staff'||!!account)&&!isOwner&&!isAdmin){
       if(account){
         if(isEnabled){
           controls.push('<button type="button" class="btn ghost tiny" data-action="kwfEditStaffV3" data-username="'+
@@ -48,13 +51,15 @@ function kwfV4RegisteredMembers(){
     return '<tr class="'+(account&&!isEnabled?'kwf-inactive-staff':'')+'">'+
       '<td><strong>'+html(displayName)+'</strong><div class="small muted">'+subLabel+'</div></td>'+
       '<td>'+html(phone)+'</td>'+
-      '<td><span class="badge '+(account&&!isEnabled?'kwf-v4-muted-badge':'')+'">'+html(roleBadge)+'</span></td>'+
+      '<td><span class="badge '+(account&&!isEnabled?'kwf-v4-muted-badge':'')+'">'+html(roleBadge)+'</span></td>'+ 
+      '<td>'+presence+'</td>'+ 
       '<td><div class="kwf-v4-actions">'+(controls.join('')||'—')+'</div></td></tr>';
   });
   return table([
     kwfV4Word('نام','Name'),
     kwfV4Word('فون','Phone'),
     kwfV4Word('رول','Role'),
+    kwfV4Word('آن لائن حیثیت','Online status'),
     kwfV4Word('انتظام','Manage')
   ],rows);
 }
