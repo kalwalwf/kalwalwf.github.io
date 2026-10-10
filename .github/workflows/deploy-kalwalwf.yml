@@ -12,6 +12,8 @@ on:
       - 'kwf-admin-updates.css'
       - 'kwf-auth-fixes.js'
       - 'kwf-auth-fixes.css'
+      - 'kwf-accounts-v2.js'
+      - 'kwf-accounts-v2.css'
       - 'smoke-test.cjs'
 
 permissions:
@@ -65,6 +67,8 @@ jobs:
           cat kwf-admin-updates.css >> _site/style.css
           cat kwf-auth-fixes.js >> _site/app.js
           cat kwf-auth-fixes.css >> _site/style.css
+          cat kwf-accounts-v2.js >> _site/app.js
+          cat kwf-accounts-v2.css >> _site/style.css
           node --check _site/app.js
           node smoke-test.cjs _site/app.js
           grep -q 'kwfStaffInvite' _site/app.js
