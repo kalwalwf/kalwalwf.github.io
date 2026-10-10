@@ -32,6 +32,7 @@ on:
       - 'kwf-backup-v1.js'
       - 'kwf-backup-v1.css'
       - 'kwf-offline-backup-reader.html'
+      - 'kwf-backup-crypto-test.cjs'
       - 'kwf-supabase-entry.mjs'
       - 'smoke-test.cjs'
 
@@ -127,6 +128,7 @@ jobs:
           node --check _site/supabase-sdk.js
           node --check _site/kwf-backup-lib.js
           node smoke-test.cjs _site/app.js
+          node kwf-backup-crypto-test.cjs
           test -s _site/kwf-offline-backup-reader.html
           grep -q 'KWF_AES256_GCM_PBKDF2' _site/app.js
           grep -q 'Backup & Restore' _site/app.js
