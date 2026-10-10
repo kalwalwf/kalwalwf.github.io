@@ -33,6 +33,7 @@ on:
       - 'kwf-backup-v1.css'
       - 'kwf-offline-backup-reader.html'
       - 'kwf-backup-crypto-test.cjs'
+      - 'KWF_BACKUP_AND_DISASTER_RECOVERY_GUIDE.md'
       - 'kwf-supabase-entry.mjs'
       - 'smoke-test.cjs'
 
@@ -190,6 +191,34 @@ jobs:
           test -s _site/supabase-sdk.js
           touch _site/.nojekyll
           echo 'KWF website ready with public Supabase connection.'
+
+      - name: Package a separate website source recovery kit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p recovery-kit
+          git archive --format=zip --output=recovery-kit/KWF_Current_Website_Source.zip HEAD
+          git -C kwf-original archive --format=zip --output=../recovery-kit/KWF_Original_Website_Source.zip HEAD
+          cp kwf-offline-backup-reader.html recovery-kit/KWF_Offline_Backup_Reader.html
+          cp KWF_BACKUP_AND_DISASTER_RECOVERY_GUIDE.md recovery-kit/KWF_Recovery_Guide.md
+          printf '%s\n' \
+            'Kalwal Welfare Foundation Website Source Recovery Kit' \
+            'Contains BOTH public GitHub repository source ZIPs, offline encrypted backup reader, and recovery guide.' \
+            'IMPORTANT: Does not contain donor records, receipts, passwords, Auth accounts or private database credentials.' \
+            'Separately download encrypted .kwfbackup from the Owner website before an outage.' \
+            'Save this ZIP OUTSIDE GitHub in at least two locations.' \
+            > recovery-kit/README_FIRST.txt
+          (cd recovery-kit && zip -q -r ../KWF_Website_Source_Recovery_Kit.zip .)
+          unzip -tq KWF_Website_Source_Recovery_Kit.zip
+          test -s KWF_Website_Source_Recovery_Kit.zip
+
+      - name: Publish website source recovery kit for Owner download
+        uses: actions/upload-artifact@v4
+        with:
+          name: KWF-Website-Source-Recovery-Kit
+          path: KWF_Website_Source_Recovery_Kit.zip
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
