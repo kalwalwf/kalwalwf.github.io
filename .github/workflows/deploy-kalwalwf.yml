@@ -45,6 +45,21 @@ jobs:
           cat kwf-original/website-enhancements.js >> _site/app.js
           cat kwf-original/website-enhancements.css >> _site/style.css
           node --check _site/app.js
+          # Temporary compatibility diagnostic (public front-end code only).
+          python3 - <<'PY'
+          import pathlib, re
+          s=pathlib.Path('_site/app.js').read_text()
+          base=s.split('// KWF 2026 public annual financial dashboard')[0]
+          for target in ['authView', 'clickAction', 'onAuthStateChange', 'updatePassword','resetPasswordForEmail','authView=','state.authView', 'addEventListener']:
+            print('LOGIN-DIAGNOSTIC:',target)
+            matches=list(re.finditer(re.escape(target),base,re.I))
+            for m in matches[:6]:
+              start=max(0,m.start()-360); end=min(len(base),m.end()+1050)
+              print(base[start:end].replace('\\r',''))
+              print('----')
+          print('INDEX-DIAGNOSTIC')
+          print(pathlib.Path('_site/index.html').read_text()[:2600])
+          PY
 
           # Use GitHub public variables if configured. Otherwise, copy the
           # publishable-key-only config already live on the existing site.
