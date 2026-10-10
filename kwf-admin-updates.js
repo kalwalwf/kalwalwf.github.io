@@ -162,16 +162,15 @@ function kwfEditModal() {
 }
 
 function kwfStaffMemberRows(){
+  // Legacy fallback: never expose role-promotion actions or invitation UI.
+  // Use the same audited, Owner-only deletion endpoint as the current page.
   return (state.profiles||[]).map(function(p){
-    var buttons='—';
-    if (kwfOwnerOnly() && p.role!=='owner') {
-      buttons='<div class="kwf-row-actions">';
-      if (p.role!=='staff') buttons+='<button class="btn tiny ghost" data-action="kwfSetRole" data-id="'+html(p.id)+'" data-role="staff">'+kwfWord('Staff بنائیں','Make Staff')+'</button>';
-      if (p.role!=='admin') buttons+='<button class="btn tiny ghost" data-action="kwfSetRole" data-id="'+html(p.id)+'" data-role="admin">'+kwfWord('Admin بنائیں','Make Admin')+'</button>';
-      if (p.role!=='donor') buttons+='<button class="btn tiny danger" data-action="kwfSetRole" data-id="'+html(p.id)+'" data-role="donor">'+kwfWord('رسائی ختم کریں','Remove access')+'</button>';
-      buttons+='</div>';
-    }
-    return '<tr><td><b>'+html(p.full_name||kwfProfileName(p.id))+'</b><div class="small muted">'+html((p.id||'').slice(0,8))+'…</div></td>'+
+    var isOwner=p.role==='owner';
+    var safeName=p.full_name?.trim() || kwfWord('بغیر نام ممبر','Unnamed member');
+    var buttons=kwfOwnerOnly()&&!isOwner?
+      '<button type="button" class="btn tiny kwf-v4-delete" data-action="kwfDeleteMemberV4" data-id="'+html(p.id)+'" data-label="'+html(safeName)+'">'+
+      kwfWord('ممبر حذف کریں','Delete member')+'</button>':'—';
+    return '<tr><td><b>'+html(safeName)+'</b><div class="small muted">'+html((p.id||'').slice(0,8))+'…</div></td>'+
       '<td>'+html(p.phone||'—')+'</td><td><span class="badge">'+html(p.role)+'</span></td><td>'+buttons+'</td></tr>';
   });
 }
@@ -214,21 +213,9 @@ function kwfActivityPanel(){
 }
 staffView = function(){
   if (!isStaff()) return limited();
-  var form='';
-  if (kwfOwnerOnly()){
-    form='<section class="panel"><h3>'+kwfWord('Supporting Staff شامل کریں','Add supporting staff')+'</h3>'+
-      '<p class="muted">'+kwfWord('Staff کی ای میل منظور کریں۔ اب دعوت کی ای میل بھیجنے کی کوشش ہوگی۔ بیرونی ای میل کے لیے Supabase Custom SMTP ضروری ہے۔','Approve their email. The website will request a Supabase invitation email. Configure Custom SMTP for reliable delivery to external addresses.')+'</p>'+
-      '<form data-form="kwfStaffInvite" class="kwf-invite-form"><label class="kwf-field"><span>'+kwfWord('Staff ای میل','Staff email')+'</span>'+
-      '<input name="email" type="email" autocomplete="email" placeholder="name@example.com" required maxlength="254"></label>'+
-      '<button class="btn" type="submit">'+kwfWord('Staff شامل کریں','Add staff')+'</button></form>'+
-      '<p class="small muted">'+kwfWord('ممبر کے ساتھ یہ لنک شیئر کریں:','Send this registration link to the member:')+
-      ' <a target="_blank" rel="noopener" href="https://kalwalwf.github.io/">https://kalwalwf.github.io/</a></p></section>'+
-      '<section class="panel"><h3>'+kwfWord('Staff دعوتیں','Staff invitations')+'</h3>'+
-      '<p class="small muted">'+kwfWord('Pending صرف اجازت کو ظاہر کرتا ہے، ای میل موصول ہونے کی تصدیق نہیں۔','Pending means approval is awaiting account activation, not email delivery.')+'</p>'+
-      '<p class="small"><a target="_blank" rel="noopener" href="https://supabase.com/dashboard/project/ekthzqacvsjfngtyvplx/auth/smtp">'+kwfWord('Supabase Email (SMTP) سیٹنگ کھولیں','Configure Supabase email (SMTP)')+'</a></p>'+
-      table([kwfWord('ای میل','Email'),kwfWord('حیثیت','Status'),kwfWord('ای میل کی حالت','Email delivery'),kwfWord('تاریخ','Date'),kwfWord('انتظام','Manage')],kwfStaffInviteRows())+'</section>';
-  }
-  return '<h2 class="sectionTitle">'+kwfWord('اسٹاف مینجمنٹ','Staff Management')+'</h2>'+form+
+  if (!kwfOwnerOnly()) return '<section class="panel"><h3>'+kwfWord('اسٹاف مینجمنٹ','Staff management')+'</h3>'+
+    '<p>'+kwfWord('صرف Owner ممبرز کو منظم کر سکتا ہے۔','Only Owner can manage members.')+'</p></section>';
+  return '<h2 class="sectionTitle">'+kwfWord('اسٹاف مینجمنٹ','Staff management')+'</h2>'+
     '<section class="panel"><h3>'+kwfWord('رجسٹرڈ ممبران','Registered members')+'</h3>'+
     table([kwfWord('نام','Name'),kwfWord('فون','Phone'),kwfWord('رول','Role'),kwfWord('انتظام','Manage')],kwfStaffMemberRows())+
     '</section>'+kwfActivityPanel();
