@@ -15,7 +15,8 @@ function kwfStaffMemberPermissions(id){
 function kwfStaffFormV3(member,editing=false){
   const p=member||{};
   const title=editing?kwfV3Text('Staff کی معلومات تبدیل کریں','Update staff details'):kwfV3Text('نیا Staff بنائیں','Create staff member');
-  const name=kwfAccountField('full_name',kwfV3Text('Staff کا پورا نام','Staff full name'),'text',true,'name',p.full_name||'');
+  const savedPerson=(state.profiles||[]).find(row=>row.id===p.user_id);
+  const name=kwfAccountField('full_name',kwfV3Text('Staff کا پورا نام','Staff full name'),'text',true,'name',p.full_name||savedPerson?.full_name||'');
   const father=kwfAccountField('father_name',kwfV3Text('والد کا نام','Father name'),'text',true,'off',p.father_name||'');
   const cnic=kwfAccountField('cnic',kwfV3Text('CNIC (13 digits, optional)','CNIC (13 digits, optional)'),'text',false,'off',p.cnic||'');
   const mobile=kwfAccountField('mobile',kwfV3Text('موبائل نمبر','Mobile number'),'tel',true,'tel',p.mobile||'');
@@ -173,7 +174,7 @@ function kwfV3ApplySearch(){
   const main=document.querySelector('.main .content');
   if(!main)return;
   const needle=String(state.kwfSearchText||'').trim().toLocaleLowerCase();
-  const list=main.querySelectorAll('table tbody tr, .public-campaign-grid article, .campaign-grid article, .campaignCards article');
+  const list=main.querySelectorAll('table tbody tr, article');
   for(const el of list){
     el.hidden=!!needle && !el.textContent.toLocaleLowerCase().includes(needle);
   }
