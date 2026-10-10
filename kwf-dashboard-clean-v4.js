@@ -48,7 +48,9 @@ function kwfV4RegisteredMembers(){
         html(member.id)+'" data-label="'+html(displayName)+'">'+kwfV4Word('ممبر حذف کریں','Delete member')+'</button>');
     }
     const subLabel=account?'@'+html(account.username):html((member.id||'').slice(0,8))+'…';
+    const serial=member.staff_serial_no==null?'—':String(member.staff_serial_no);
     return '<tr class="'+(account&&!isEnabled?'kwf-inactive-staff':'')+'">'+
+      '<td class="kwf-serial-cell">'+html(serial)+'</td>'+
       '<td><strong>'+html(displayName)+'</strong><div class="small muted">'+subLabel+'</div></td>'+
       '<td>'+html(phone)+'</td>'+
       '<td><span class="badge '+(account&&!isEnabled?'kwf-v4-muted-badge':'')+'">'+html(roleBadge)+'</span></td>'+ 
@@ -56,6 +58,7 @@ function kwfV4RegisteredMembers(){
       '<td><div class="kwf-v4-actions">'+(controls.join('')||'—')+'</div></td></tr>';
   });
   return table([
+    kwfV4Word('سیریل نمبر','Sr. No.'),
     kwfV4Word('نام','Name'),
     kwfV4Word('فون','Phone'),
     kwfV4Word('رول','Role'),
