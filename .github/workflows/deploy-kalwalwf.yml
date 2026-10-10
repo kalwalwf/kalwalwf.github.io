@@ -25,6 +25,9 @@ on:
       - 'kwf-staff-presence-v5.js'
       - 'kwf-staff-presence-v5.css'
       - 'kwf-responsive-v5.css'
+      - 'kwf-english-default-v6.js'
+      - 'kwf-family-serial-v6.js'
+      - 'kwf-serial-language-v6.css'
       - 'kwf-supabase-entry.mjs'
       - 'smoke-test.cjs'
 
@@ -74,7 +77,9 @@ jobs:
           old=p.read_text(encoding='utf-8')
           needle="const isStaff=()=>['admin','owner'].includes(state.profile?.role);"
           assert old.count(needle)==1, 'Expected base isStaff role gate'
-          p.write_text(old.replace(needle,"const isStaff=()=>['admin','owner','staff'].includes(state.profile?.role);"),encoding='utf-8')
+          fixed=old.replace(needle,"const isStaff=()=>['admin','owner','staff'].includes(state.profile?.role);")
+          prelude=pathlib.Path('kwf-english-default-v6.js').read_text(encoding='utf-8')
+          p.write_text(prelude+'\n'+fixed,encoding='utf-8')
           PY
           cat kwf-original/website-enhancements.js >> _site/app.js
           cat kwf-original/website-enhancements.css >> _site/style.css
@@ -97,6 +102,8 @@ jobs:
           cat kwf-staff-presence-v5.js >> _site/app.js
           cat kwf-staff-presence-v5.css >> _site/style.css
           cat kwf-responsive-v5.css >> _site/style.css
+          cat kwf-family-serial-v6.js >> _site/app.js
+          cat kwf-serial-language-v6.css >> _site/style.css
           # Both initial auth and old-password verification now load from Pages.
           python3 - <<'PY'
           import pathlib
