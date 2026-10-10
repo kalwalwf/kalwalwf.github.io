@@ -71,7 +71,7 @@ assert.equal(run("kwfUsernameEmail('Test_Staff')"),'test_staff@staff.kalwalwf.gi
 assert.equal(run("kwfNormalizePhone('03001234567')"),'+923001234567','Pakistani mobile number normalization');
 assert.match(run("setupView()"),/kwfRetryConnectionV3/,'slow connection gets retry button');
 assert.doesNotMatch(run("setupView()"),/not yet been connected|run the provided SQL file/i,'old misleading setup warning removed');
-run("state.profile={full_name:'Test Owner',role:'owner'};state.user={id:'10000000-0000-4000-8000-000000000001',email:'test@example.com'};state.view='staff';state.kwfStaffAccounts=[{user_id:'44444444-4444-4444-8444-444444444444',username:'teststaff',is_active:true,father_name:'Test Father',cnic:'1234567890123',mobile:'+923001234567'}];state.profiles=[{id:state.user.id,full_name:'Test Owner',role:'owner'},{id:'44444444-4444-4444-8444-444444444444',full_name:'Staff Test',role:'staff'}];render();");
+run("state.kwfPhoneRecovery=false;state.authView='login';state.profile={full_name:'Test Owner',role:'owner'};state.user={id:'10000000-0000-4000-8000-000000000001',email:'test@example.com'};state.view='staff';state.kwfStaffAccounts=[{user_id:'44444444-4444-4444-8444-444444444444',username:'teststaff',is_active:true,father_name:'Test Father',cnic:'1234567890123',mobile:'+923001234567'}];state.profiles=[{id:state.user.id,full_name:'Test Owner',role:'owner'},{id:'44444444-4444-4444-8444-444444444444',full_name:'Staff Test',role:'staff'}];render();");
 assert.match(app.innerHTML,/Father name/,'staff father name in form and records');
 assert.match(app.innerHTML,/CNIC/,'staff CNIC field in form');
 assert.match(app.innerHTML,/Mobile number/,'staff mobile number in form');
