@@ -80,7 +80,7 @@ assert.match(app.innerHTML,/kwfDisableStaffV3/,'owner can disable staff login');
 assert.match(app.innerHTML,/kwfEditStaffV3/,'owner can edit staff identity');
 assert.doesNotMatch(app.innerHTML,/1234567890123/,'full CNIC never displayed in directory table');
 run("state.view='dashboard';state.kwfDonorRegistrationStats={registered_donors:42,registered_today:3,registered_last_30_days:9};render();");
-assert.match(app.innerHTML,/Total registered donors/,'registered donor total appears in admin dashboard');
+assert.match(app.innerHTML,/Registered donors/,'registered donor count appears in the compact dashboard');
 assert.match(app.innerHTML,/42/,'admin dashboard displays donor count');
 run("state.view='families';state.aid=[{beneficiary_id:'20000000-0000-4000-8000-000000000002',amount_pkr:1000,voided_at:null}];render();");
 assert.match(app.innerHTML,/kwf-family-helped/,'families with distributed non-void aid are marked green');
