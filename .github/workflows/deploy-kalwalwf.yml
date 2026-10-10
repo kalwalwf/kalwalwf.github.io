@@ -52,6 +52,19 @@ jobs:
           test -f _site/index.html
           test -f _site/app.js
           python3 - <<'PY'
+          import pathlib,re
+          html=pathlib.Path('_site/index.html').read_text()
+          print('KWF-DIAG-HTML',html[:7800])
+          s=pathlib.Path('_site/app.js').read_text()
+          for name in ('setupView','init','start','render','refresh','getRows','shell','staffView','donationsView','settingsView','dashboardView','familiesView','accountView','processForm','clickAction'):
+            m=re.search(r'(?m)^(?:async\\s+)?function\\s+'+re.escape(name)+r'\\s*\\(',s)
+            if not m:
+              m=re.search(r'(?m)^const\\s+'+re.escape(name)+r'\\s*=',s)
+            if m:
+              print('KWF-DIAG-FUNC',name,s[m.start():m.start()+6000])
+          print('KWF-DIAG-END')
+          PY
+          python3 - <<'PY'
           import pathlib
           p=pathlib.Path('_site/app.js')
           old=p.read_text(encoding='utf-8')
