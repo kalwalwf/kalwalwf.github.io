@@ -207,6 +207,13 @@ function kwfV3DecoratePasswordInputs(){
 }
 const kwfV3PriorRender=render;
 render=function(){
+  // Staff CNIC/contact details must not stay in the in-memory app after logout.
+  if(!state.user){
+    state.kwfStaffAccounts=[];
+    state.kwfStaffPerms=[];
+    state.kwfOwnPermissions={can_review_donations:false,can_manage_payment_accounts:false};
+    state.kwfStaffEditName='';
+  }
   kwfV3PriorRender();
   kwfV3DecoratePasswordInputs();
   kwfV3ApplySearch();
