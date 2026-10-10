@@ -1,0 +1,45 @@
+
+/* KWF v4: declutter admin staff page and explain donor receipt workflow. */
+.kwf-v4-admin{display:grid;gap:16px;align-content:start}
+.kwf-v4-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:0}
+.kwf-v4-heading .sectionTitle{margin-bottom:4px}
+.kwf-v4-heading p{margin:0}
+.kwf-v4-inline-stats{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.kwf-v4-inline-stats>span{display:flex;gap:7px;align-items:center;background:#ebf5ed;border:1px solid #d3e7d8;color:#245740;border-radius:10px;padding:8px 12px;font-size:13px}
+.kwf-v4-inline-stats strong{font-size:18px;color:#124d32}
+.kwf-v4-panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.kwf-v4-panel-head h3{margin:0;color:#173f2e}
+.kwf-v4-main-list{margin:0}
+.kwf-v4-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.kwf-v4-actions .btn{white-space:nowrap}
+.kwf-v4-delete,.main .content .panel .kwf-v4-delete{border:1px solid #d59c9b!important;background:#fff6f6!important;color:#a22525!important}
+.kwf-v4-delete:hover{background:#fee2e2!important}
+.kwf-v4-delete:disabled{opacity:.45}
+.kwf-v4-muted-badge{background:#eee!important;color:#595f5c!important}
+.kwf-v4-details{border:1px solid #dfe8e1;background:#fff;border-radius:14px;overflow:hidden}
+.kwf-v4-details>summary{list-style:none;display:flex;align-items:center;gap:8px;padding:16px 19px;font-weight:750;cursor:pointer;color:#164d33;user-select:none}
+.kwf-v4-details>summary::-webkit-details-marker{display:none}
+.kwf-v4-details>summary::after{content:'⌄';margin-inline-start:auto;font-size:20px;color:#56816a}
+.kwf-v4-details[open]>summary::after{content:'⌃'}
+.kwf-v4-details[open]>summary{border-bottom:1px solid #e2ece5}
+.kwf-v4-details>.panel{box-shadow:none;border:0;margin:0;border-radius:0}
+.kwf-v4-summary-icon{display:grid;place-items:center;background:#d7efe0;width:25px;height:25px;border-radius:8px;color:#0d6c45;font-size:20px}
+.kwf-v4-empty{padding:18px;color:#607168;text-align:center}
+.kwf-v4-donors-compact{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:#eef8f1;border:1px solid #d0e6d7;color:#235a3c;padding:12px 16px;border-radius:13px;margin-bottom:16px}
+.kwf-v4-donors-compact span{font-size:13px;color:#46755b;padding-inline-start:12px;border-inline-start:1px solid #c2dec9}
+.kwf-v4-donor-guide{border:1px solid #baddc5!important;background:linear-gradient(135deg,#fff,#f1faf4)!important;margin-bottom:18px}
+.kwf-v4-donor-guide .kwf-v4-panel-head{margin-bottom:10px}
+.kwf-v4-donor-guide h3{font-size:20px;color:#174d33;margin:0}
+.kwf-v4-steps{margin:15px 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.kwf-v4-steps li{display:flex;align-items:flex-start;gap:9px;line-height:1.55;color:#285441;font-size:14px;background:#fff;border:1px solid #deece1;border-radius:10px;padding:12px}
+.kwf-v4-step{flex:0 0 25px;height:25px;display:grid;place-items:center;border-radius:50%;background:#157d52;color:white;font-weight:800;font-size:12px}
+.kwf-v4-donor-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
+.kwf-v4-donor-guide.compact .kwf-v4-steps{margin-bottom:6px}
+.kwf-v4-empty-review{padding:13px 15px;border:1px solid #d7e7da;background:#f1faf5;color:#345b43;border-radius:10px;margin-bottom:16px;font-size:14px}
+@media(max-width:700px){
+ .kwf-v4-steps{grid-template-columns:1fr}
+ .kwf-v4-heading{align-items:flex-start}
+ .kwf-v4-actions .btn{flex:0 0 auto}
+ .kwf-v4-admin .tablewrap{overflow-x:auto}
+ .kwf-v4-panel-head{align-items:flex-start;flex-direction:column}
+}
